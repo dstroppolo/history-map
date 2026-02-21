@@ -62,7 +62,7 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
             childOf: rootQId,
             parentOf: undefined,
             childrenFetched: false,
-            parentsFetched: true,
+            parentsFetched: false,
           })
         }
       }
@@ -118,7 +118,7 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
           childOf: nodeId,
           parentOf: undefined,
           childrenFetched: false,
-          parentsFetched: true,
+          parentsFetched: false,
         }
       })
 
@@ -157,52 +157,54 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
       return
     }
 
-    // For now, use the first parent as the primary parent
-    const parentQId = parentIds[0]
     const existingIds = new Set(nodes.map((n) => n.id))
+    const parentPeople = await fetchEntities(parentIds)
+    const newParentNodes: FamilyTreeNodeData[] = []
 
-    if (!existingIds.has(parentQId)) {
-      const parentPeople = await fetchEntities([parentQId])
-      const pp = parentPeople.get(parentQId)
+    // First parent is the "structural" parent (child.childOf points here).
+    // Second parent is the partner — same level, draws lines, but child
+    // doesn't point to them via childOf so layout doesn't double-count.
+    const primaryId = parentIds[0]
 
-      const parentNode: FamilyTreeNodeData = {
-        id: parentQId,
-        qId: parentQId,
-        name: pp?.name ?? parentQId,
-        avatarUrl: pp?.imageUrl,
-        birthYear: pp?.birthYear,
-        deathYear: pp?.deathYear,
-        childOf: undefined,
-        parentOf: [nodeId],
-        childrenFetched: false,
-        parentsFetched: false,
-      }
-
-      setNodes((prev) => [
-        parentNode,
-        ...prev.map((n) =>
-          n.id === nodeId
-            ? { ...n, childOf: parentQId, parentsFetched: true }
-            : n
-        ),
-      ])
-    } else {
-      // Parent already exists, just link them
-      setNodes((prev) =>
-        prev.map((n) => {
-          if (n.id === nodeId) {
-            return { ...n, childOf: parentQId, parentsFetched: true }
-          }
-          if (n.id === parentQId) {
-            const existing = n.parentOf ?? []
-            return existing.includes(nodeId)
-              ? n
-              : { ...n, parentOf: [...existing, nodeId] }
-          }
-          return n
+    for (const pid of parentIds) {
+      if (existingIds.has(pid)) {
+        // Already in the tree — just add the child to their parentOf
+        setNodes((prev) =>
+          prev.map((n) => {
+            if (n.id === pid) {
+              const existing = n.parentOf ?? []
+              return existing.includes(nodeId)
+                ? n
+                : { ...n, parentOf: [...existing, nodeId] }
+            }
+            return n
+          })
+        )
+      } else {
+        const pp = parentPeople.get(pid)
+        newParentNodes.push({
+          id: pid,
+          qId: pid,
+          name: pp?.name ?? pid,
+          avatarUrl: pp?.imageUrl,
+          birthYear: pp?.birthYear,
+          deathYear: pp?.deathYear,
+          childOf: undefined,
+          parentOf: [nodeId],
+          childrenFetched: false,
+          parentsFetched: false,
         })
-      )
+      }
     }
+
+    setNodes((prev) => [
+      ...newParentNodes,
+      ...prev.map((n) =>
+        n.id === nodeId
+          ? { ...n, childOf: primaryId, parentsFetched: true }
+          : n
+      ),
+    ])
     removeLoading(nodeId)
   }, [nodes])
 

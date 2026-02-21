@@ -10,10 +10,14 @@ export interface LayoutPosition {
 }
 
 /**
- * Computes positions for all nodes so that:
- * - Nodes at the same level are equidistant horizontally
- * - Parents are centered over their children
- * - Lines remain correct as the tree structure changes
+ * Tree layout using a subtree-width algorithm:
+ *
+ * 1. Bottom-up: each node's subtree width = sum of its children's subtree
+ *    widths + gaps, or NODE_WIDTH if it's a leaf.
+ * 2. Top-down: each parent allocates horizontal space to its children
+ *    proportional to their subtree widths, then centers itself over them.
+ *
+ * This guarantees nodes never overlap regardless of which branches are expanded.
  */
 export function computeTreeLayout(
   nodes: FamilyTreeNodeData[]
@@ -24,23 +28,25 @@ export function computeTreeLayout(
   const roots = nodes.filter((n) => n.childOf === undefined)
   if (roots.length === 0) return positions
 
-  // BFS to assign levels and build level-order lists
-  const levels: string[][] = []
-  const levelMap = new Map<string, number>()
-  const queue: { id: string; level: number }[] = roots.map((r) => ({ id: r.id, level: 0 }))
-
-  for (const r of roots) {
-    levelMap.set(r.id, 0)
+  // Returns only the children that point back to this node via childOf
+  // (structural children for layout). Other parents still draw lines
+  // via parentOf but don't own the child in the tree structure.
+  function structuralChildren(id: string): string[] {
+    const node = nodeMap.get(id)
+    return (node?.parentOf ?? []).filter((cid) => {
+      const child = nodeMap.get(cid)
+      return child && child.childOf === id
+    })
   }
+
+  // BFS to assign levels — only follow structural children
+  const levelMap = new Map<string, number>()
+  const queue = roots.map((r) => ({ id: r.id, level: 0 }))
+  for (const r of roots) levelMap.set(r.id, 0)
 
   while (queue.length > 0) {
     const { id, level } = queue.shift()!
-    if (!levels[level]) levels[level] = []
-    levels[level].push(id)
-
-    const node = nodeMap.get(id)
-    const childIds = node?.parentOf ?? []
-    for (const cid of childIds) {
+    for (const cid of structuralChildren(id)) {
       if (!levelMap.has(cid)) {
         levelMap.set(cid, level + 1)
         queue.push({ id: cid, level: level + 1 })
@@ -48,53 +54,78 @@ export function computeTreeLayout(
     }
   }
 
-  // Process from deepest level upward
-  const maxLevel = levels.length - 1
-
-  for (let L = maxLevel; L >= 0; L--) {
-    const levelNodes = levels[L]
-    if (!levelNodes?.length) continue
-
-    if (L === maxLevel) {
-      // Deepest level: equidistant horizontal positions
-      const n = levelNodes.length
-      const totalWidth = n * NODE_WIDTH + (n - 1) * GAP
-      const startX = -totalWidth / 2 + NODE_WIDTH / 2
-
-      levelNodes.forEach((id, i) => {
-        const x = startX + i * (NODE_WIDTH + GAP)
-        const y = L * (NODE_HEIGHT + GAP)
-        positions.set(id, { x, y })
-      })
-    } else {
-      // Parent level: center each parent over its children
-      for (const id of levelNodes) {
-        const node = nodeMap.get(id)
-        const childIds = node?.parentOf ?? []
-
-        if (childIds.length === 0) {
-          // Leaf at non-bottom level - use position of single sibling or center
-          const idx = levelNodes.indexOf(id)
-          const n = levelNodes.length
-          const totalWidth = n * NODE_WIDTH + (n - 1) * GAP
-          const startX = -totalWidth / 2 + NODE_WIDTH / 2
-          const x = startX + idx * (NODE_WIDTH + GAP)
-          const y = L * (NODE_HEIGHT + GAP)
-          positions.set(id, { x, y })
-        } else {
-          const childPositions = childIds
-            .map((cid) => positions.get(cid))
-            .filter((p): p is LayoutPosition => p != null)
-
-          if (childPositions.length > 0) {
-            const x =
-              childPositions.reduce((s, p) => s + p.x, 0) / childPositions.length
-            const y = L * (NODE_HEIGHT + GAP)
-            positions.set(id, { x, y })
-          }
-        }
+  // Non-structural parents (e.g. the mother when the child points to
+  // the father via childOf) still need a level. Place them at the same
+  // level as the structural parent they share children with.
+  for (const node of nodes) {
+    if (levelMap.has(node.id)) continue
+    const childIds = (node.parentOf ?? []).filter((cid) => nodeMap.has(cid))
+    for (const cid of childIds) {
+      const childLevel = levelMap.get(cid)
+      if (childLevel !== undefined) {
+        levelMap.set(node.id, childLevel - 1)
+        break
       }
     }
+    if (!levelMap.has(node.id)) {
+      levelMap.set(node.id, 0)
+    }
+  }
+
+  // Memoised subtree width computation — structural children only
+  const widthCache = new Map<string, number>()
+
+  function subtreeWidth(id: string): number {
+    const cached = widthCache.get(id)
+    if (cached !== undefined) return cached
+
+    const childIds = structuralChildren(id)
+
+    if (childIds.length === 0) {
+      widthCache.set(id, NODE_WIDTH)
+      return NODE_WIDTH
+    }
+
+    const total =
+      childIds.reduce((sum, cid) => sum + subtreeWidth(cid), 0) +
+      (childIds.length - 1) * GAP
+
+    widthCache.set(id, total)
+    return total
+  }
+
+  // Top-down position assignment — structural children only
+  function assignPositions(id: string, centerX: number) {
+    const level = levelMap.get(id) ?? 0
+    const y = level * (NODE_HEIGHT + GAP)
+    positions.set(id, { x: centerX, y })
+
+    const childIds = structuralChildren(id)
+    if (childIds.length === 0) return
+
+    const childWidths = childIds.map((cid) => subtreeWidth(cid))
+    const totalWidth =
+      childWidths.reduce((s, w) => s + w, 0) + (childIds.length - 1) * GAP
+
+    let cursor = centerX - totalWidth / 2
+
+    for (let i = 0; i < childIds.length; i++) {
+      const childCenter = cursor + childWidths[i] / 2
+      assignPositions(childIds[i], childCenter)
+      cursor += childWidths[i] + GAP
+    }
+  }
+
+  // Lay out all root subtrees side by side
+  const rootWidths = roots.map((r) => subtreeWidth(r.id))
+  const totalWidth =
+    rootWidths.reduce((s, w) => s + w, 0) + (roots.length - 1) * GAP
+  let cursor = -totalWidth / 2
+
+  for (let i = 0; i < roots.length; i++) {
+    const centerX = cursor + rootWidths[i] / 2
+    assignPositions(roots[i].id, centerX)
+    cursor += rootWidths[i] + GAP
   }
 
   return positions
