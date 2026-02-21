@@ -3,35 +3,43 @@ import type { FamilyTreeNodeData } from '@/types/familyTreeNode'
 const NODE_WIDTH = 220
 const NODE_HEIGHT = 200
 const GAP = 48
+const COUPLE_GAP = 24
 
 export interface LayoutPosition {
   x: number
   y: number
 }
 
+export interface TreeLayoutResult {
+  positions: Map<string, LayoutPosition>
+  companions: Map<string, string[]>
+  companionOf: Map<string, string>
+}
+
 /**
- * Tree layout using a subtree-width algorithm:
+ * Tree layout with companion (spouse) positioning.
  *
- * 1. Bottom-up: each node's subtree width = sum of its children's subtree
- *    widths + gaps, or NODE_WIDTH if it's a leaf.
- * 2. Top-down: each parent allocates horizontal space to its children
- *    proportional to their subtree widths, then centers itself over them.
+ * Non-structural parents (nodes whose parentOf lists children that point
+ * to a different structural parent via childOf) are detected as
+ * "companions" and placed side-by-side with their structural partner.
  *
- * This guarantees nodes never overlap regardless of which branches are expanded.
+ * Subtree-width algorithm guarantees no overlaps.
  */
 export function computeTreeLayout(
   nodes: FamilyTreeNodeData[]
-): Map<string, LayoutPosition> {
+): TreeLayoutResult {
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
   const positions = new Map<string, LayoutPosition>()
+  const companions = new Map<string, string[]>()
+  const companionOf = new Map<string, string>()
 
-  const roots = nodes.filter((n) => n.childOf === undefined)
-  if (roots.length === 0) return positions
+  const empty: TreeLayoutResult = { positions, companions, companionOf }
+  if (nodes.length === 0) return empty
 
-  // Returns only the children that point back to this node via childOf
-  // (structural children for layout). Other parents still draw lines
-  // via parentOf but don't own the child in the tree structure.
-  function structuralChildren(id: string): string[] {
+  const allRoots = nodes.filter((n) => n.childOf === undefined)
+  if (allRoots.length === 0) return empty
+
+  function initialStructuralChildren(id: string): string[] {
     const node = nodeMap.get(id)
     return (node?.parentOf ?? []).filter((cid) => {
       const child = nodeMap.get(cid)
@@ -39,14 +47,14 @@ export function computeTreeLayout(
     })
   }
 
-  // BFS to assign levels — only follow structural children
+  // BFS to assign levels
   const levelMap = new Map<string, number>()
-  const queue = roots.map((r) => ({ id: r.id, level: 0 }))
-  for (const r of roots) levelMap.set(r.id, 0)
+  const queue = allRoots.map((r) => ({ id: r.id, level: 0 }))
+  for (const r of allRoots) levelMap.set(r.id, 0)
 
   while (queue.length > 0) {
     const { id, level } = queue.shift()!
-    for (const cid of structuralChildren(id)) {
+    for (const cid of initialStructuralChildren(id)) {
       if (!levelMap.has(cid)) {
         levelMap.set(cid, level + 1)
         queue.push({ id: cid, level: level + 1 })
@@ -54,9 +62,6 @@ export function computeTreeLayout(
     }
   }
 
-  // Non-structural parents (e.g. the mother when the child points to
-  // the father via childOf) still need a level. Place them at the same
-  // level as the structural parent they share children with.
   for (const node of nodes) {
     if (levelMap.has(node.id)) continue
     const childIds = (node.parentOf ?? []).filter((cid) => nodeMap.has(cid))
@@ -67,38 +72,151 @@ export function computeTreeLayout(
         break
       }
     }
-    if (!levelMap.has(node.id)) {
-      levelMap.set(node.id, 0)
+    if (!levelMap.has(node.id)) levelMap.set(node.id, 0)
+  }
+
+  // Push root subtrees down when a cross-tree parent is at the same
+  // level as (or below) its non-structural child.
+  function subtreeRoot(nid: string): string {
+    const n = nodeMap.get(nid)
+    if (!n?.childOf) return nid
+    return subtreeRoot(n.childOf)
+  }
+
+  function subtreeDescendants(rootId: string): string[] {
+    const result = [rootId]
+    const q = [rootId]
+    while (q.length > 0) {
+      const cur = q.shift()!
+      for (const cid of initialStructuralChildren(cur)) {
+        result.push(cid)
+        q.push(cid)
+      }
+    }
+    return result
+  }
+
+  const adjustedRoots = new Set<string>()
+  for (const node of nodes) {
+    const nodeLevel = levelMap.get(node.id)
+    if (nodeLevel === undefined) continue
+    const childIds = (node.parentOf ?? []).filter((cid) => nodeMap.has(cid))
+    for (const cid of childIds) {
+      const childLevel = levelMap.get(cid)
+      if (childLevel === undefined) continue
+      if (nodeLevel < childLevel) continue
+      const cRoot = subtreeRoot(cid)
+      if (cRoot === subtreeRoot(node.id)) continue
+      if (adjustedRoots.has(cRoot)) continue
+      adjustedRoots.add(cRoot)
+      const offset = nodeLevel - childLevel + 1
+      for (const did of subtreeDescendants(cRoot)) {
+        const cur = levelMap.get(did)
+        if (cur !== undefined) levelMap.set(did, cur + offset)
+      }
     }
   }
 
-  // Memoised subtree width computation — structural children only
+  // Snap non-structural parents to their partner's level so they can
+  // be detected as companions even when BFS placed them at level 0.
+  for (const node of nodes) {
+    if (initialStructuralChildren(node.id).length > 0) continue
+    const childIds = (node.parentOf ?? []).filter((cid) => nodeMap.has(cid))
+    if (childIds.length === 0) continue
+
+    const firstChild = nodeMap.get(childIds[0])
+    if (!firstChild?.childOf) continue
+    if (firstChild.childOf === node.id) continue
+
+    const partnerId = firstChild.childOf
+    if (!nodeMap.has(partnerId)) continue
+
+    const partnerLevel = levelMap.get(partnerId)
+    if (partnerLevel !== undefined) levelMap.set(node.id, partnerLevel)
+  }
+
+  // Identify companions: non-structural parents that share children
+  // with a structural parent at the same level.
+  for (const node of nodes) {
+    if (initialStructuralChildren(node.id).length > 0) continue
+    const childIds = (node.parentOf ?? []).filter((cid) => nodeMap.has(cid))
+    if (childIds.length === 0) continue
+
+    const firstChild = nodeMap.get(childIds[0])
+    if (!firstChild?.childOf) continue
+    if (firstChild.childOf === node.id) continue
+
+    const partnerId = firstChild.childOf
+    if (!nodeMap.has(partnerId)) continue
+
+    const partnerLevel = levelMap.get(partnerId)
+    const nodeLevel = levelMap.get(node.id)
+    if (partnerLevel === undefined || nodeLevel === undefined) continue
+    if (partnerLevel !== nodeLevel) continue
+
+    if (!companions.has(partnerId)) companions.set(partnerId, [])
+    companions.get(partnerId)!.push(node.id)
+    companionOf.set(node.id, partnerId)
+  }
+
+  for (const [cid, pid] of companionOf) {
+    levelMap.set(cid, levelMap.get(pid) ?? 0)
+  }
+
+  // Structural children excluding companions
+  function structuralChildren(id: string): string[] {
+    const node = nodeMap.get(id)
+    return (node?.parentOf ?? []).filter((cid) => {
+      const child = nodeMap.get(cid)
+      return child && child.childOf === id && !companionOf.has(cid)
+    })
+  }
+
+  const roots = allRoots.filter((r) => !companionOf.has(r.id))
+  if (roots.length === 0) return empty
+
   const widthCache = new Map<string, number>()
 
   function subtreeWidth(id: string): number {
     const cached = widthCache.get(id)
     if (cached !== undefined) return cached
 
+    const comps = companions.get(id) ?? []
+    const coupleW = NODE_WIDTH + comps.length * (NODE_WIDTH + COUPLE_GAP)
+
     const childIds = structuralChildren(id)
 
     if (childIds.length === 0) {
-      widthCache.set(id, NODE_WIDTH)
-      return NODE_WIDTH
+      widthCache.set(id, coupleW)
+      return coupleW
     }
 
-    const total =
+    const childrenTotal =
       childIds.reduce((sum, cid) => sum + subtreeWidth(cid), 0) +
       (childIds.length - 1) * GAP
 
+    const total = Math.max(childrenTotal, coupleW)
     widthCache.set(id, total)
     return total
   }
 
-  // Top-down position assignment — structural children only
   function assignPositions(id: string, centerX: number) {
     const level = levelMap.get(id) ?? 0
     const y = level * (NODE_HEIGHT + GAP)
-    positions.set(id, { x: centerX, y })
+
+    const comps = companions.get(id) ?? []
+    if (comps.length > 0) {
+      const coupleW = NODE_WIDTH + comps.length * (NODE_WIDTH + COUPLE_GAP)
+      const startX = centerX - coupleW / 2 + NODE_WIDTH / 2
+      positions.set(id, { x: startX, y })
+      let cx = startX + NODE_WIDTH + COUPLE_GAP
+      for (const cid of comps) {
+        positions.set(cid, { x: cx, y })
+        cx += NODE_WIDTH + COUPLE_GAP
+      }
+    } else {
+      positions.set(id, { x: centerX, y })
+    }
 
     const childIds = structuralChildren(id)
     if (childIds.length === 0) return
@@ -116,7 +234,6 @@ export function computeTreeLayout(
     }
   }
 
-  // Lay out all root subtrees side by side
   const rootWidths = roots.map((r) => subtreeWidth(r.id))
   const totalWidth =
     rootWidths.reduce((s, w) => s + w, 0) + (roots.length - 1) * GAP
@@ -128,7 +245,7 @@ export function computeTreeLayout(
     cursor += rootWidths[i] + GAP
   }
 
-  return positions
+  return { positions, companions, companionOf }
 }
 
 export function getLayoutBounds(positions: Map<string, LayoutPosition>) {
@@ -148,4 +265,4 @@ export function getLayoutBounds(positions: Map<string, LayoutPosition>) {
   }
 }
 
-export { NODE_WIDTH, NODE_HEIGHT, GAP }
+export { NODE_WIDTH, NODE_HEIGHT, GAP, COUPLE_GAP }

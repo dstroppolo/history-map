@@ -7,13 +7,13 @@ import {
   getLayoutBounds,
   NODE_WIDTH,
   NODE_HEIGHT,
+  GAP,
 } from '@/utils/familyTreeLayout'
 
 const GEORGE_VI_QID = 'Q280856'
 
 const MIN_SCALE = 0.3
 const LINE_WIDTH = 2
-const GAP = 48
 const MAX_SCALE = 3
 const ZOOM_STEP = 0.15
 
@@ -74,7 +74,9 @@ export default function FamilyTreePage() {
     rootQId: GEORGE_VI_QID,
   })
 
-  const rawLayout = useMemo(() => computeTreeLayout(nodes), [nodes])
+  const treeLayout = useMemo(() => computeTreeLayout(nodes), [nodes])
+  const rawLayout = treeLayout.positions
+  const { companions: companionMap, companionOf } = treeLayout
   const bounds = useMemo(() => getLayoutBounds(rawLayout), [rawLayout])
 
   // Normalize layout: shift all positions so the top-left of the
@@ -97,52 +99,98 @@ export default function FamilyTreePage() {
   }, [rawLayout, bounds])
 
   const lines = useMemo(() => {
+    type Px = { left: number; top: number; cx: number; cy: number; bottomY: number }
     const out: Array<{ x1: number; y1: number; x2: number; y2: number }> = []
 
+    const drawnCouples = new Set<string>()
+
     for (const node of nodes) {
-      const childIds = node.parentOf
-      if (!childIds?.length) continue
+      // Companion lines are drawn by their structural partner
+      if (companionOf.has(node.id)) continue
 
       const parentPx = pixelPos.get(node.id)
       if (!parentPx) continue
 
-      const parentBottomX = parentPx.cx
-      const parentBottomY = parentPx.bottomY
+      const comps = companionMap.get(node.id) ?? []
 
-      if (childIds.length === 1) {
-        const childPx = pixelPos.get(childIds[0])
-        if (childPx) {
-          out.push({
-            x1: parentBottomX,
-            y1: parentBottomY,
-            x2: childPx.cx,
-            y2: childPx.top,
-          })
+      // Merge children from structural parent and all companions
+      const allChildIds = new Set(node.parentOf ?? [])
+      for (const cid of comps) {
+        const comp = nodes.find((n) => n.id === cid)
+        if (comp?.parentOf) comp.parentOf.forEach((id) => allChildIds.add(id))
+      }
+      if (allChildIds.size === 0) continue
+
+      const childPxList = [...allChildIds]
+        .map((id) => pixelPos.get(id))
+        .filter((p): p is Px => !!p && p.top > parentPx.top)
+
+      if (childPxList.length === 0) continue
+
+      const allParentPx: Px[] = [parentPx]
+      for (const cid of comps) {
+        const cpx = pixelPos.get(cid)
+        if (cpx) allParentPx.push(cpx)
+      }
+
+      const coupleKey = [node.id, ...comps].sort().join('|')
+      if (drawnCouples.has(coupleKey)) continue
+      drawnCouples.add(coupleKey)
+
+      if (allParentPx.length > 1) {
+        // Couple: horizontal line between parents, then fork to children
+        const leftPx = Math.min(...allParentPx.map((p) => p.cx))
+        const rightPx = Math.max(...allParentPx.map((p) => p.cx))
+        const coupleBottomY = parentPx.bottomY
+
+        // Horizontal couple line
+        out.push({ x1: leftPx, y1: coupleBottomY, x2: rightPx, y2: coupleBottomY })
+
+        const coupleMidX = (leftPx + rightPx) / 2
+        const forkY = coupleBottomY + GAP / 2
+
+        // Vertical from couple midpoint to fork
+        out.push({ x1: coupleMidX, y1: coupleBottomY, x2: coupleMidX, y2: forkY })
+
+        if (childPxList.length === 1) {
+          const c = childPxList[0]
+          if (Math.abs(coupleMidX - c.cx) < 1) {
+            out.push({ x1: coupleMidX, y1: forkY, x2: c.cx, y2: c.top })
+          } else {
+            out.push({ x1: Math.min(coupleMidX, c.cx), y1: forkY, x2: Math.max(coupleMidX, c.cx), y2: forkY })
+            out.push({ x1: c.cx, y1: forkY, x2: c.cx, y2: c.top })
+          }
+        } else {
+          const leftX = Math.min(coupleMidX, ...childPxList.map((c) => c.cx))
+          const rightX = Math.max(coupleMidX, ...childPxList.map((c) => c.cx))
+          out.push({ x1: leftX, y1: forkY, x2: rightX, y2: forkY })
+          for (const c of childPxList) {
+            out.push({ x1: c.cx, y1: forkY, x2: c.cx, y2: c.top })
+          }
         }
       } else {
-        const childPxList = childIds
-          .map((id) => pixelPos.get(id))
-          .filter(Boolean) as Array<{ left: number; top: number; cx: number }>
+        // Single parent fork
+        const parentBottomX = parentPx.cx
+        const parentBottomY = parentPx.bottomY
 
-        if (childPxList.length === 0) continue
-
-        const forkY = parentBottomY + GAP / 2
-        const leftX = Math.min(...childPxList.map((c) => c.cx))
-        const rightX = Math.max(...childPxList.map((c) => c.cx))
-
-        // Vertical line from parent bottom to fork
-        out.push({ x1: parentBottomX, y1: parentBottomY, x2: parentBottomX, y2: forkY })
-        // Horizontal line across children
-        out.push({ x1: leftX, y1: forkY, x2: rightX, y2: forkY })
-        // Vertical lines from fork down to each child
-        for (const c of childPxList) {
-          out.push({ x1: c.cx, y1: forkY, x2: c.cx, y2: c.top })
+        if (childPxList.length === 1) {
+          const c = childPxList[0]
+          out.push({ x1: parentBottomX, y1: parentBottomY, x2: c.cx, y2: c.top })
+        } else {
+          const forkY = parentBottomY + GAP / 2
+          const leftX = Math.min(parentBottomX, ...childPxList.map((c) => c.cx))
+          const rightX = Math.max(parentBottomX, ...childPxList.map((c) => c.cx))
+          out.push({ x1: parentBottomX, y1: parentBottomY, x2: parentBottomX, y2: forkY })
+          out.push({ x1: leftX, y1: forkY, x2: rightX, y2: forkY })
+          for (const c of childPxList) {
+            out.push({ x1: c.cx, y1: forkY, x2: c.cx, y2: c.top })
+          }
         }
       }
     }
 
     return out
-  }, [nodes, pixelPos])
+  }, [nodes, pixelPos, companionMap, companionOf])
 
   return (
     <motion.div
