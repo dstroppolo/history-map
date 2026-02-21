@@ -1,0 +1,80 @@
+{
+  "version": "2.8",
+  "children": [
+    {
+      "type": "rectangle",
+      "cornerRadius": 15,
+      "id": "l1qqr",
+      "x": -297,
+      "y": -221,
+      "fill": "#878472ff",
+      "width": 243,
+      "height": 310
+    },
+    {
+      "type": "rectangle",
+      "cornerRadius": 167,
+      "id": "yQIgP",
+      "x": -247,
+      "y": -186,
+      "context": "Avatar picture",
+      "fill": "#CCCCCC",
+      "width": 143,
+      "height": 163
+    },
+    {
+      "type": "text",
+      "id": "6m6Sq",
+      "x": -236,
+      "y": -4,
+      "fill": "#000000",
+      "textGrowth": "fixed-width-height",
+      "width": 160,
+      "height": 37,
+      "content": "Full name goes here",
+      "fontFamily": "Inter",
+      "fontSize": 24,
+      "fontWeight": "normal"
+    },
+    {
+      "type": "ellipse",
+      "id": "4EKX5",
+      "x": -187,
+      "y": -237,
+      "fill": "#CCCCCC",
+      "width": 31,
+      "height": 32
+    },
+    {
+      "type": "ellipse",
+      "id": "QMBqL",
+      "x": -187,
+      "y": 73,
+      "fill": "#CCCCCC",
+      "width": 31,
+      "height": 32
+    },
+    {
+      "type": "text",
+      "id": "o09Fs",
+      "x": -179,
+      "y": -236,
+      "fill": "#000000",
+      "content": "+",
+      "fontFamily": "Inter",
+      "fontSize": 24,
+      "fontWeight": "normal"
+    },
+    {
+      "type": "text",
+      "id": "n8t99",
+      "x": -179,
+      "y": 73,
+      "fill": "#000000",
+      "content": "+",
+      "fontFamily": "Inter",
+      "fontSize": 24,
+      "fontWeight": "normal"
+    }
+  ]
+}

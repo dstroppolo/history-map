@@ -1,0 +1,30 @@
+/* History Map – Design System (from designs/README.md) */
+:root {
+  --color-bg: #FAFAF9;
+  --color-card: #FFFFFF;
+  --color-muted: #F5F5F4;
+  --color-border: #E7E5E4;
+  --color-secondary: #78716C;
+  --color-body: #57534E;
+  --color-primary: #1C1917;
+  --color-accent: #57534E;
+  --color-hint: #A8A29E;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-body);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}

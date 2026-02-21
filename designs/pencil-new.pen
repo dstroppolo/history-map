@@ -1,0 +1,1504 @@
+{
+  "version": "2.8",
+  "children": [
+    {
+      "type": "frame",
+      "id": "bi8Au",
+      "x": 0,
+      "y": 0,
+      "name": "Frame",
+      "clip": true,
+      "width": 800,
+      "height": 600,
+      "fill": "#FFFFFF",
+      "layout": "none"
+    },
+    {
+      "type": "frame",
+      "id": "Cc8TO",
+      "x": 0,
+      "y": 0,
+      "name": "Family Tree Page",
+      "width": 1440,
+      "height": 900,
+      "fill": "#FAFAF9",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "B2Dqj",
+          "name": "header1",
+          "width": "fill_container",
+          "height": 64,
+          "padding": [
+            0,
+            24
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "MYtMA",
+              "name": "logo1",
+              "fill": "#1C1917",
+              "content": "History Map",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "NmdLt",
+              "name": "nav1",
+              "gap": 32,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "VHynr",
+                  "name": "navT",
+                  "fill": "#78716C",
+                  "content": "Timeline",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "3Ftaw",
+                  "name": "navF",
+                  "fill": "#1C1917",
+                  "content": "Family Tree",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "Tur8R",
+                  "name": "navM",
+                  "fill": "#78716C",
+                  "content": "Map",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "MAuXw",
+          "name": "main1",
+          "width": "fill_container",
+          "height": "fill_container",
+          "children": [
+            {
+              "type": "frame",
+              "id": "xMwsc",
+              "name": "treeArea",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ktro7",
+                  "name": "jumpLabel",
+                  "fill": "#78716C",
+                  "content": "Jump to:",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "skkkG",
+                  "name": "jumpRow",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "udXWf",
+                      "name": "btn1",
+                      "fill": "#F5F5F4",
+                      "cornerRadius": 6,
+                      "padding": [
+                        8,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "aeKGX",
+                          "name": "btn1Text",
+                          "fill": "#57534E",
+                          "content": "Charlemagne",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "W2CC9",
+                      "name": "btn2",
+                      "fill": "#F5F5F4",
+                      "cornerRadius": 6,
+                      "padding": [
+                        8,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "u0sHz",
+                          "name": "btn2Text",
+                          "fill": "#57534E",
+                          "content": "Elizabeth II",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "s2kRL",
+                      "name": "btn3",
+                      "fill": "#F5F5F4",
+                      "cornerRadius": 6,
+                      "padding": [
+                        8,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "h5WMa",
+                          "name": "btn3Text",
+                          "fill": "#57534E",
+                          "content": "Louis XIV",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "JyJYY",
+                  "name": "treeCanvas",
+                  "clip": true,
+                  "width": "fill_container",
+                  "height": 600,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "DbpXZ",
+                      "name": "flowHint",
+                      "fill": "#A8A29E",
+                      "content": "Youngest left, ancestors right. Siblings shown at same level. Click to expand branches.",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "bDQPN",
+                      "name": "gen1",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "3oiTW",
+                          "name": "row1",
+                          "width": "fill_container",
+                          "gap": 12,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "r00nV",
+                              "name": "row1Label",
+                              "fill": "#A8A29E",
+                              "content": "Youngest",
+                              "fontFamily": "Inter",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "eJQt4",
+                              "name": "charlie",
+                              "width": 64,
+                              "layout": "vertical",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "G5vBa",
+                                  "name": "charlieC",
+                                  "width": 32,
+                                  "height": 32,
+                                  "fill": "#F5F5F4",
+                                  "cornerRadius": 16
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "7TOax",
+                                  "name": "charlieN",
+                                  "fill": "#1C1917",
+                                  "content": "Charles III",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "WDjgR",
+                                  "name": "charlieD",
+                                  "fill": "#78716C",
+                                  "content": "b. 1948",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 9,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "FNr0G",
+                              "name": "anne",
+                              "width": 64,
+                              "layout": "vertical",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "VZQKq",
+                                  "name": "anneC",
+                                  "width": 32,
+                                  "height": 32,
+                                  "fill": "#F5F5F4",
+                                  "cornerRadius": 16
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "eV8bb",
+                                  "name": "anneN",
+                                  "fill": "#1C1917",
+                                  "content": "Anne",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "ry5Ap",
+                                  "name": "anneD",
+                                  "fill": "#78716C",
+                                  "content": "b. 1950",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 9,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "BRQq3",
+                              "name": "andrew",
+                              "width": 64,
+                              "layout": "vertical",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "PDXkf",
+                                  "name": "andrewC",
+                                  "width": 32,
+                                  "height": 32,
+                                  "fill": "#F5F5F4",
+                                  "cornerRadius": 16
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "OkQRf",
+                                  "name": "andrewN",
+                                  "fill": "#1C1917",
+                                  "content": "Andrew",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "yUK0V",
+                                  "name": "andrewD",
+                                  "fill": "#78716C",
+                                  "content": "b. 1960",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 9,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "15Oem",
+                              "name": "edward",
+                              "width": 64,
+                              "layout": "vertical",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "bChnV",
+                                  "name": "edwardC",
+                                  "width": 32,
+                                  "height": 32,
+                                  "fill": "#F5F5F4",
+                                  "cornerRadius": 16
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "Od4k8",
+                                  "name": "edwardN",
+                                  "fill": "#1C1917",
+                                  "content": "Edward",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "i9WkC",
+                                  "name": "edwardD",
+                                  "fill": "#78716C",
+                                  "content": "b. 1964",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 9,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "9AoDk",
+                              "name": "branch1",
+                              "fill": "#A8A29E",
+                              "content": "↗",
+                              "fontFamily": "Inter",
+                              "fontSize": 16,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "CXHkG",
+                              "name": "eliz",
+                              "width": 64,
+                              "layout": "vertical",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "sQWQQ",
+                                  "name": "elizC",
+                                  "width": 32,
+                                  "height": 32,
+                                  "fill": "#E7E5E4",
+                                  "cornerRadius": 16
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "h9aXE",
+                                  "name": "elizN",
+                                  "fill": "#1C1917",
+                                  "content": "Elizabeth II",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "IdjQO",
+                                  "name": "elizD",
+                                  "fill": "#78716C",
+                                  "content": "1926-2022",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 9,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "2IcVe",
+                              "name": "margaret",
+                              "width": 64,
+                              "layout": "vertical",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "AnPes",
+                                  "name": "margaretC",
+                                  "width": 32,
+                                  "height": 32,
+                                  "fill": "#F5F5F4",
+                                  "cornerRadius": 16
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "4huwc",
+                                  "name": "margaretN",
+                                  "fill": "#1C1917",
+                                  "content": "Margaret",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "A8MKv",
+                                  "name": "margaretD",
+                                  "fill": "#78716C",
+                                  "content": "1930-2002",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 9,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "nnyg9",
+                              "name": "branch2",
+                              "fill": "#A8A29E",
+                              "content": "→",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "uoD7Z",
+                              "name": "george",
+                              "width": 64,
+                              "layout": "vertical",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "MtbFd",
+                                  "name": "georgeC",
+                                  "width": 32,
+                                  "height": 32,
+                                  "fill": "#F5F5F4",
+                                  "cornerRadius": 16
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "LlHLC",
+                                  "name": "georgeN",
+                                  "fill": "#1C1917",
+                                  "content": "George VI",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "mbGmz",
+                                  "name": "georgeD",
+                                  "fill": "#78716C",
+                                  "content": "1895-1952",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 9,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "f7KcV",
+                              "name": "dots2",
+                              "fill": "#A8A29E",
+                              "content": "...",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "ugCfd",
+                              "name": "charlemagne",
+                              "width": 64,
+                              "layout": "vertical",
+                              "gap": 4,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "aSjYc",
+                                  "name": "charlemagneC",
+                                  "width": 32,
+                                  "height": 32,
+                                  "fill": "#E7E5E4",
+                                  "cornerRadius": 16
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "aau3f",
+                                  "name": "charlemagneN",
+                                  "fill": "#1C1917",
+                                  "content": "Charlemagne",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "PRrM7",
+                                  "name": "charlemagneD",
+                                  "fill": "#78716C",
+                                  "content": "742-814",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 9,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "6sHS6",
+              "name": "detailPanel",
+              "width": 360,
+              "height": "fill_container",
+              "fill": "#FFFFFF",
+              "cornerRadius": [
+                8,
+                0,
+                0,
+                8
+              ],
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "left": 1
+                },
+                "fill": "#E7E5E4"
+              },
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pJKxG",
+                  "name": "detailSub",
+                  "fill": "#78716C",
+                  "content": "Queen of the United Kingdom, 1926-2022",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "FoUcA",
+                  "name": "detailDesc",
+                  "fill": "#57534E",
+                  "content": "Longest-reigning British monarch. Click See events to view on Timeline.",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "v48mC",
+                  "name": "detailLink",
+                  "fill": "#57534E",
+                  "content": "See events on Timeline",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "eYgR9",
+                  "name": "panelHeader",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "CXbc2",
+                      "name": "detailTitle",
+                      "fill": "#1C1917",
+                      "content": "Elizabeth II",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Xrmbs",
+                      "name": "closeHint",
+                      "fill": "#78716C",
+                      "content": "× close",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "yfxeS",
+      "x": 1540,
+      "y": 0,
+      "name": "Timeline Page",
+      "width": 1440,
+      "height": 900,
+      "fill": "#FAFAF9",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "eEBVy",
+          "name": "header2",
+          "width": "fill_container",
+          "height": 64,
+          "padding": [
+            0,
+            24
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "AVdtc",
+              "name": "logo2",
+              "fill": "#1C1917",
+              "content": "History Map",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "XF6yD",
+              "name": "nav2",
+              "gap": 32,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "E5dVx",
+                  "name": "nav2T",
+                  "fill": "#1C1917",
+                  "content": "Timeline",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "2rJza",
+                  "name": "nav2F",
+                  "fill": "#78716C",
+                  "content": "Family Tree",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "GEfZw",
+                  "name": "nav2M",
+                  "fill": "#78716C",
+                  "content": "Map",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ysp9w",
+          "name": "main2",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "LMuBQ",
+              "name": "scrubberLabel",
+              "fill": "#78716C",
+              "content": "Year",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "xIjVS",
+              "name": "scrubber",
+              "width": "fill_container",
+              "height": 48,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "roTEV",
+                  "name": "scrubberTrack",
+                  "width": "fill_container",
+                  "height": 6,
+                  "fill": "#E7E5E4",
+                  "cornerRadius": 3
+                },
+                {
+                  "type": "frame",
+                  "id": "Mxffi",
+                  "name": "scrubberThumb",
+                  "width": 20,
+                  "height": 20,
+                  "fill": "#57534E",
+                  "cornerRadius": 10
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "ZDf8z",
+              "name": "yearDisplay",
+              "fill": "#1C1917",
+              "content": "1776",
+              "fontFamily": "Inter",
+              "fontSize": 32,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "xQjAk",
+              "name": "eventsLabel",
+              "fill": "#78716C",
+              "content": "Events this year",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "7oYtv",
+              "name": "eventGrid",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "bd5ZT",
+                  "name": "eventCard1",
+                  "width": 280,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 16,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "HiJ0M",
+                      "name": "ec1Title",
+                      "fill": "#1C1917",
+                      "content": "American Revolution",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "6XxET",
+                      "name": "ec1Date",
+                      "fill": "#78716C",
+                      "content": "Jul 4, 1776",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "sNAhA",
+                      "name": "ec1Desc",
+                      "fill": "#57534E",
+                      "content": "Declaration of Independence signed",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "OxLWJ",
+                  "name": "eventCard2",
+                  "width": 280,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 16,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "u8ixW",
+                      "name": "ec2Title",
+                      "fill": "#1C1917",
+                      "content": "Adam Smith",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "yZWk4",
+                      "name": "ec2Date",
+                      "fill": "#78716C",
+                      "content": "Wealth of Nations published",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "l8tj9",
+                      "name": "ec2Desc",
+                      "fill": "#57534E",
+                      "content": "Foundational economics text",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "BMx6i",
+                  "name": "eventCard3",
+                  "width": 280,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 16,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "txqEV",
+                      "name": "ec3Title",
+                      "fill": "#1C1917",
+                      "content": "James Cook",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "vqoOe",
+                      "name": "ec3Date",
+                      "fill": "#78716C",
+                      "content": "Third Pacific voyage",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "2MJR3",
+                      "name": "ec3Desc",
+                      "fill": "#57534E",
+                      "content": "Exploration of Pacific",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "w8VU2",
+              "name": "onThisDaySection",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "padding": [
+                16,
+                0
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Qon1K",
+                  "name": "otdLabel",
+                  "fill": "#1C1917",
+                  "content": "On this day",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "ef9fY",
+                  "name": "otdCard",
+                  "width": 400,
+                  "fill": "#F5F5F4",
+                  "cornerRadius": 8,
+                  "gap": 12,
+                  "padding": 16,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "uyizN",
+                      "name": "otdDate",
+                      "fill": "#78716C",
+                      "content": "Feb 19",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Q46Da",
+                      "name": "otdEvent",
+                      "fill": "#57534E",
+                      "content": "1942 - Executive Order 9066 (Japanese internment)",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "n2qMo",
+              "name": "exploreHint",
+              "fill": "#A8A29E",
+              "content": "Click any event to explore in knowledge graph",
+              "fontFamily": "Inter",
+              "fontSize": 11,
+              "fontWeight": "normal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "uPOxq",
+      "x": 3080,
+      "y": 0,
+      "name": "Map Page",
+      "width": 1440,
+      "height": 900,
+      "fill": "#FAFAF9",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "bQPa3",
+          "name": "header3",
+          "width": "fill_container",
+          "height": 64,
+          "padding": [
+            0,
+            24
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "nSdin",
+              "name": "logo3",
+              "fill": "#1C1917",
+              "content": "History Map",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "kn1b1",
+              "name": "nav3",
+              "gap": 32,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Fxjhg",
+                  "name": "nav3T",
+                  "fill": "#78716C",
+                  "content": "Timeline",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "g5PMq",
+                  "name": "nav3F",
+                  "fill": "#78716C",
+                  "content": "Family Tree",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "bPL7D",
+                  "name": "nav3M",
+                  "fill": "#1C1917",
+                  "content": "Map",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "W1sEK",
+          "name": "main3",
+          "width": "fill_container",
+          "height": "fill_container",
+          "children": [
+            {
+              "type": "frame",
+              "id": "wUd5k",
+              "name": "mapArea",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "yYHut",
+                  "name": "mapYearBar",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "cLBe6",
+                      "name": "mapYearLabel",
+                      "fill": "#78716C",
+                      "content": "Events for year:",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "hTwEM",
+                      "name": "mapYearVal",
+                      "fill": "#1C1917",
+                      "content": "1776",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "V33VP",
+                  "name": "mapCanvas",
+                  "width": "fill_container",
+                  "height": 650,
+                  "fill": "#E7E5E4",
+                  "cornerRadius": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "IJKJH",
+                      "name": "mapPlaceholder",
+                      "fill": "#78716C",
+                      "content": "World map - events plotted by location. Click marker for detail.",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "rDuc3",
+              "name": "mapSidePanel",
+              "width": 320,
+              "fill": "#FFFFFF",
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "WOXel",
+                  "name": "mapPanelTitle",
+                  "fill": "#1C1917",
+                  "content": "Philadelphia, USA",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "zzYyP",
+                  "name": "mapPanelEvent",
+                  "fill": "#57534E",
+                  "content": "Declaration of Independence signed - Jul 4, 1776",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "0xhKz",
+                  "name": "mapPanelHint",
+                  "fill": "#A8A29E",
+                  "content": "Click map markers to see events",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "kw6Td",
+      "x": 0,
+      "y": 950,
+      "name": "variationsLabel",
+      "fill": "#1C1917",
+      "content": "Detail panel placement options (for feedback)",
+      "fontFamily": "Inter",
+      "fontSize": 18,
+      "fontWeight": "600"
+    },
+    {
+      "type": "frame",
+      "id": "WzZyG",
+      "x": 0,
+      "y": 990,
+      "name": "Option A: Right sidebar",
+      "width": 400,
+      "height": 280,
+      "fill": "#FAFAF9",
+      "cornerRadius": 8,
+      "layout": "vertical",
+      "gap": 8,
+      "padding": 16,
+      "children": [
+        {
+          "type": "text",
+          "id": "mFUAp",
+          "name": "optALabel",
+          "fill": "#57534E",
+          "content": "A. Right sidebar (current)",
+          "fontFamily": "Inter",
+          "fontSize": 12,
+          "fontWeight": "600"
+        },
+        {
+          "type": "text",
+          "id": "NmDGj",
+          "name": "optADesc",
+          "fill": "#78716C",
+          "content": "Detail panel fixed on right. Always visible when item selected. Familiar pattern.",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "nMRsn",
+          "name": "optAPreview",
+          "width": "fill_container",
+          "height": 200,
+          "children": [
+            {
+              "type": "frame",
+              "id": "kLGd2",
+              "name": "optAMain",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "#E7E5E4",
+              "cornerRadius": 4
+            },
+            {
+              "type": "frame",
+              "id": "jTwpI",
+              "name": "optAPanel",
+              "width": 100,
+              "height": "fill_container",
+              "fill": "#FFFFFF",
+              "cornerRadius": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "LOI5r",
+      "x": 420,
+      "y": 990,
+      "name": "Option B: Bottom sheet",
+      "width": 400,
+      "height": 280,
+      "fill": "#FAFAF9",
+      "cornerRadius": 8,
+      "layout": "vertical",
+      "gap": 8,
+      "padding": 16,
+      "children": [
+        {
+          "type": "text",
+          "id": "69T2F",
+          "name": "optBLabel",
+          "fill": "#57534E",
+          "content": "B. Bottom sheet",
+          "fontFamily": "Inter",
+          "fontSize": 12,
+          "fontWeight": "600"
+        },
+        {
+          "type": "text",
+          "id": "cwHk4",
+          "name": "optBDesc",
+          "fill": "#78716C",
+          "content": "Detail slides up from bottom. Good for mobile. Overlays content.",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "KV0bt",
+          "name": "optBPreview",
+          "width": "fill_container",
+          "height": 200,
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "PyfqQ",
+              "name": "optBMain",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "#E7E5E4",
+              "cornerRadius": 4
+            },
+            {
+              "type": "frame",
+              "id": "qnayH",
+              "name": "optBSheet",
+              "width": "fill_container",
+              "height": 60,
+              "fill": "#FFFFFF",
+              "cornerRadius": [
+                8,
+                8,
+                0,
+                0
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "4ph3o",
+      "x": 840,
+      "y": 990,
+      "name": "Option C: Slide-over",
+      "width": 400,
+      "height": 280,
+      "fill": "#E8F5E9",
+      "cornerRadius": 8,
+      "layout": "vertical",
+      "gap": 8,
+      "padding": 16,
+      "children": [
+        {
+          "type": "text",
+          "id": "MhDte",
+          "name": "optCLabel",
+          "fill": "#57534E",
+          "content": "C. Slide-over (chosen)",
+          "fontFamily": "Inter",
+          "fontSize": 12,
+          "fontWeight": "600"
+        },
+        {
+          "type": "text",
+          "id": "RyvvT",
+          "name": "optCDesc",
+          "fill": "#78716C",
+          "content": "Panel overlays from right. More space for content. Dismissible.",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "v0HNL",
+          "name": "optCPreview",
+          "width": "fill_container",
+          "height": 200,
+          "children": [
+            {
+              "type": "frame",
+              "id": "zLmt8",
+              "name": "optCMain",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "#E7E5E4",
+              "cornerRadius": 4
+            },
+            {
+              "type": "frame",
+              "id": "tj2Zk",
+              "name": "optCPanel",
+              "width": 120,
+              "height": "fill_container",
+              "fill": "#FFFFFF",
+              "cornerRadius": [
+                8,
+                0,
+                0,
+                8
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "JPrZg",
+      "x": 1260,
+      "y": 990,
+      "name": "Option D: Modal",
+      "width": 400,
+      "height": 280,
+      "fill": "#FAFAF9",
+      "cornerRadius": 8,
+      "layout": "vertical",
+      "gap": 8,
+      "padding": 16,
+      "children": [
+        {
+          "type": "text",
+          "id": "1qmsP",
+          "name": "optDLabel",
+          "fill": "#57534E",
+          "content": "D. Modal / dialog",
+          "fontFamily": "Inter",
+          "fontSize": 12,
+          "fontWeight": "600"
+        },
+        {
+          "type": "text",
+          "id": "RLKm5",
+          "name": "optDDesc",
+          "fill": "#78716C",
+          "content": "Detail in centered modal. Focused view. Blocks background.",
+          "fontFamily": "Inter",
+          "fontSize": 11,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "7wBw0",
+          "name": "optDPreview",
+          "width": "fill_container",
+          "height": 200,
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "QgQri",
+              "name": "optDBackdrop",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "#E7E5E4",
+              "cornerRadius": 4
+            },
+            {
+              "type": "frame",
+              "id": "vZw9o",
+              "name": "optDModal",
+              "width": 150,
+              "height": 80,
+              "fill": "#FFFFFF",
+              "cornerRadius": 8
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
