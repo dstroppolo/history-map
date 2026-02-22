@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import type { FamilyTreeNodeData } from '@/types/familyTreeNode'
+import type { Person } from '@/types/person'
 import { fetchPersonWithRelations, fetchEntities } from '@/services/wikidata'
 
 interface UseFamilyTreeOptions {
@@ -9,6 +10,7 @@ interface UseFamilyTreeOptions {
 export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
   const [nodes, setNodes] = useState<FamilyTreeNodeData[]>([])
   const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set())
+  const personMap = useRef<Map<string, Person>>(new Map())
 
   const addLoading = (id: string) =>
     setLoadingIds((s) => new Set(s).add(id))
@@ -33,6 +35,7 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
       }
 
       const { person, childIds } = result
+      personMap.current.set(rootQId, person)
 
       const rootNode: FamilyTreeNodeData = {
         id: rootQId,
@@ -41,6 +44,9 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
         avatarUrl: person.imageUrl,
         birthYear: person.birthYear,
         deathYear: person.deathYear,
+        title: person.title,
+        houseId: person.houseId,
+        houseLabel: person.houseLabel,
         childOf: undefined,
         parentOf: childIds.length > 0 ? childIds : undefined,
         childrenFetched: true,
@@ -50,6 +56,7 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
       const childNodes: FamilyTreeNodeData[] = []
       if (childIds.length > 0) {
         const childPeople = await fetchEntities(childIds)
+        childPeople.forEach((p, id) => personMap.current.set(id, p))
         for (const cid of childIds) {
           const cp = childPeople.get(cid)
           childNodes.push({
@@ -59,6 +66,9 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
             avatarUrl: cp?.imageUrl,
             birthYear: cp?.birthYear,
             deathYear: cp?.deathYear,
+            title: cp?.title,
+            houseId: cp?.houseId,
+            houseLabel: cp?.houseLabel,
             childOf: rootQId,
             parentOf: undefined,
             childrenFetched: false,
@@ -102,6 +112,7 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
     }
 
     const childPeople = await fetchEntities(childIds)
+    childPeople.forEach((p, id) => personMap.current.set(id, p))
     const existingIds = new Set(nodes.map((n) => n.id))
 
     const newChildren: FamilyTreeNodeData[] = childIds
@@ -115,6 +126,9 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
           avatarUrl: cp?.imageUrl,
           birthYear: cp?.birthYear,
           deathYear: cp?.deathYear,
+          title: cp?.title,
+          houseId: cp?.houseId,
+          houseLabel: cp?.houseLabel,
           childOf: nodeId,
           parentOf: undefined,
           childrenFetched: false,
@@ -158,6 +172,7 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
     }
 
     const parentPeople = await fetchEntities(parentIds)
+    parentPeople.forEach((p, id) => personMap.current.set(id, p))
     const primaryId = parentIds[0]
 
     setNodes((prev) => {
@@ -174,6 +189,9 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
             avatarUrl: pp?.imageUrl,
             birthYear: pp?.birthYear,
             deathYear: pp?.deathYear,
+            title: pp?.title,
+            houseId: pp?.houseId,
+            houseLabel: pp?.houseLabel,
             childOf: undefined,
             parentOf: [nodeId],
             childrenFetched: false,
@@ -203,5 +221,9 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
     removeLoading(nodeId)
   }, [nodes])
 
-  return { nodes, loadingIds, fetchChildren, fetchParents }
+  const getPersonById = useCallback((id: string): Person | undefined => {
+    return personMap.current.get(id)
+  }, [])
+
+  return { nodes, loadingIds, fetchChildren, fetchParents, getPersonById }
 }

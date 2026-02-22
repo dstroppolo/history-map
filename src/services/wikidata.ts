@@ -1,6 +1,36 @@
 import type { Person } from '@/types/person'
 
 const WIKIDATA_API = 'https://www.wikidata.org/w/api.php'
+const WIKIPEDIA_API = 'https://en.wikipedia.org/api/rest_v1'
+
+export interface WikipediaSummary {
+  title: string
+  extract: string
+  thumbnail?: { source: string; width: number; height: number }
+  contentUrls?: { desktop?: { page: string } }
+}
+
+export async function fetchWikipediaSummary(
+  wikipediaUrl: string,
+): Promise<WikipediaSummary | null> {
+  try {
+    const title = decodeURIComponent(wikipediaUrl.split('/wiki/').pop() ?? '')
+    if (!title) return null
+    const res = await fetch(`${WIKIPEDIA_API}/page/summary/${encodeURIComponent(title)}`, {
+      headers: { Accept: 'application/json' },
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return {
+      title: data.title ?? title,
+      extract: data.extract ?? '',
+      thumbnail: data.thumbnail,
+      contentUrls: data.content_urls,
+    }
+  } catch {
+    return null
+  }
+}
 
 interface WikidataEntity {
   labels?: { en?: { value: string } }
@@ -56,6 +86,8 @@ export function entityToPerson(entityId: string, data: WikidataEntity): Person {
 
   const wikipediaUrl = data.sitelinks?.enwiki?.url
 
+  const houseId = extractEntityId(claims.P53?.[0]?.mainsnak?.datavalue?.value)
+
   return {
     id: entityId,
     name,
@@ -65,7 +97,30 @@ export function entityToPerson(entityId: string, data: WikidataEntity): Person {
     description: descriptions,
     imageUrl,
     wikipediaUrl,
+    houseId,
   }
+}
+
+/** Fetch en labels for entity IDs. */
+export async function fetchEntityLabels(
+  ids: string[]
+): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map()
+  const unique = [...new Set(ids)].filter(Boolean)
+  const idParam = unique.map((id) => (id.startsWith('Q') ? id : `Q${id}`)).join('|')
+  const url = `${WIKIDATA_API}?action=wbgetentities&ids=${idParam}&languages=en&format=json&origin=*`
+  const res = await fetch(url)
+  if (!res.ok) return new Map()
+  const json = await res.json()
+  const entities = json.entities ?? {}
+  const map = new Map<string, string>()
+  for (const id of unique) {
+    const eid = id.startsWith('Q') ? id : `Q${id}`
+    const entity = entities[eid]
+    const label = entity?.labels?.en?.value
+    if (label) map.set(eid, label)
+  }
+  return map
 }
 
 export async function fetchPerson(qId: string): Promise<Person | null> {
@@ -113,6 +168,10 @@ export async function fetchPersonWithRelations(qId: string): Promise<{
   if (!entity || entity.missing) return null
 
   const person = entityToPerson(id, entity)
+  if (person.houseId) {
+    const labels = await fetchEntityLabels([person.houseId])
+    person.houseLabel = labels.get(person.houseId) ?? undefined
+  }
   const parentIds = getParentIds(entity)
   const childIds = getChildIds(entity)
 
@@ -129,11 +188,22 @@ export async function fetchEntities(ids: string[]): Promise<Map<string, Person>>
   const json = await res.json()
   const entities = json.entities ?? {}
   const map = new Map<string, Person>()
+  const houseIds = new Set<string>()
   for (const id of unique) {
     const eid = id.startsWith('Q') ? id : `Q${id}`
     const entity = entities[eid]
     if (entity && !entity.missing) {
-      map.set(eid, entityToPerson(eid, entity))
+      const person = entityToPerson(eid, entity)
+      if (person.houseId) houseIds.add(person.houseId)
+      map.set(eid, person)
+    }
+  }
+  if (houseIds.size > 0) {
+    const houseLabels = await fetchEntityLabels([...houseIds])
+    for (const person of map.values()) {
+      if (person.houseId) {
+        person.houseLabel = houseLabels.get(person.houseId) ?? undefined
+      }
     }
   }
   return map

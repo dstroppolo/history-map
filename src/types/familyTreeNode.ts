@@ -14,4 +14,10 @@ export interface FamilyTreeNodeData {
   childrenFetched?: boolean
   /** Whether parents have been fetched */
   parentsFetched?: boolean
+  /** Title or role (e.g. "King of the United Kingdom") */
+  title?: string
+  /** House/dynasty Wikidata QID (P53) */
+  houseId?: string
+  /** House/dynasty display label */
+  houseLabel?: string
 }

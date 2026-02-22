@@ -3,6 +3,9 @@ import type { FamilyTreeNodeData } from '@/types/familyTreeNode'
 
 interface FamilyTreeNodeProps extends FamilyTreeNodeData {
   loading?: boolean
+  parentHighlighted?: boolean
+  dimmed?: boolean
+  onNodeClick?: () => void
   onAddParent?: () => void
   onAddChild?: () => void
 }
@@ -12,7 +15,11 @@ export default function FamilyTreeNode({
   avatarUrl,
   birthYear,
   deathYear,
+  title,
   loading,
+  parentHighlighted,
+  dimmed,
+  onNodeClick,
   onAddParent,
   onAddChild,
 }: FamilyTreeNodeProps) {
@@ -37,8 +44,14 @@ export default function FamilyTreeNode({
         flexDirection: 'column',
         alignItems: 'center',
         position: 'relative',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-        opacity: loading ? 0.6 : 1,
+        opacity: loading ? 0.6 : dimmed ? 0.25 : 1,
+        cursor: onNodeClick ? 'pointer' : undefined,
+      }}
+      onClick={onNodeClick}
+      animate={{
+        boxShadow: parentHighlighted
+          ? '0 4px 20px rgba(0,0,0,0.10)'
+          : '0 2px 8px rgba(0,0,0,0.04)',
       }}
       whileHover={{ boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}
       transition={{ duration: 0.2 }}
@@ -47,7 +60,7 @@ export default function FamilyTreeNode({
       {showAddParent && (
         <button
           type="button"
-          onClick={onAddParent}
+          onClick={(e) => { e.stopPropagation(); onAddParent?.() }}
           aria-label="Add parent"
           style={{
             position: 'absolute',
@@ -131,6 +144,23 @@ export default function FamilyTreeNode({
         {name}
       </h3>
 
+      {title && (
+        <span
+          style={{
+            fontSize: 11,
+            color: 'var(--color-secondary)',
+            marginTop: 2,
+            textAlign: 'center',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: '100%',
+          }}
+        >
+          {title}
+        </span>
+      )}
+
       {years && (
         <span
           style={{
@@ -147,7 +177,7 @@ export default function FamilyTreeNode({
       {showAddChild && (
         <button
           type="button"
-          onClick={onAddChild}
+          onClick={(e) => { e.stopPropagation(); onAddChild?.() }}
           aria-label="Add child"
           style={{
             position: 'absolute',

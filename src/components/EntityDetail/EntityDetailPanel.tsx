@@ -1,5 +1,11 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Person } from '@/types/person'
+import {
+  fetchWikipediaSummary,
+  type WikipediaSummary,
+} from '@/services/wikidata'
 
 interface EntityDetailPanelProps {
   person: Person
@@ -13,6 +19,23 @@ export default function EntityDetailPanel({
   onSeeEvents,
 }: EntityDetailPanelProps) {
   const hasWikidataId = person.id.startsWith('Q') && !person.id.includes('-')
+
+  const [summary, setSummary] = useState<WikipediaSummary | null>(null)
+  const [summaryLoading, setSummaryLoading] = useState(false)
+
+  useEffect(() => {
+    if (!person.wikipediaUrl) return
+    let cancelled = false
+    setSummary(null)
+    setSummaryLoading(true)
+    fetchWikipediaSummary(person.wikipediaUrl).then((s) => {
+      if (!cancelled) {
+        setSummary(s)
+        setSummaryLoading(false)
+      }
+    })
+    return () => { cancelled = true }
+  }, [person.wikipediaUrl])
 
   return (
     <AnimatePresence>
@@ -38,7 +61,7 @@ export default function EntityDetailPanel({
           top: 0,
           right: 0,
           bottom: 0,
-          width: 360,
+          width: 400,
           maxWidth: '90vw',
           background: 'var(--color-card)',
           boxShadow: '-4px 0 24px rgba(0,0,0,0.1)',
@@ -69,8 +92,8 @@ export default function EntityDetailPanel({
             src={person.imageUrl}
             alt={person.name}
             style={{
-              width: 64,
-              height: 64,
+              width: 80,
+              height: 80,
               borderRadius: '50%',
               objectFit: 'cover',
               marginBottom: 16,
@@ -79,8 +102,8 @@ export default function EntityDetailPanel({
         ) : (
           <div
             style={{
-              width: 64,
-              height: 64,
+              width: 80,
+              height: 80,
               borderRadius: '50%',
               background: 'var(--color-muted)',
               marginBottom: 16,
@@ -89,10 +112,10 @@ export default function EntityDetailPanel({
         )}
         <h2
           style={{
-            fontSize: 20,
+            fontSize: 22,
             fontWeight: 600,
             color: 'var(--color-primary)',
-            margin: '0 0 8px 0',
+            margin: '0 0 4px 0',
           }}
         >
           {person.name}
@@ -102,40 +125,107 @@ export default function EntityDetailPanel({
             style={{
               fontSize: 14,
               color: 'var(--color-secondary)',
-              margin: '0 0 16px 0',
+              margin: '0 0 12px 0',
             }}
           >
             {person.title}
-          </p>
-        )}
-        {person.description && (
-          <p
-            style={{
-              fontSize: 13,
-              color: 'var(--color-body)',
-              margin: '0 0 12px 0',
-              lineHeight: 1.5,
-            }}
-          >
-            {person.description}
           </p>
         )}
         <p
           style={{
             fontSize: 13,
             color: 'var(--color-body)',
-            margin: 0,
+            margin: '0 0 20px 0',
           }}
         >
           {person.birthYear && <>Born {person.birthYear}</>}
           {person.deathYear && <> · Died {person.deathYear}</>}
         </p>
 
-        {onSeeEvents && (
-          <div style={{ marginTop: 24 }}>{onSeeEvents}</div>
+        {/* Wikipedia summary */}
+        {person.wikipediaUrl && (
+          <div
+            style={{
+              borderTop: '1px solid var(--color-border)',
+              paddingTop: 16,
+              marginBottom: 16,
+            }}
+          >
+            {summaryLoading && (
+              <p
+                style={{
+                  fontSize: 13,
+                  color: 'var(--color-secondary)',
+                  margin: 0,
+                  fontStyle: 'italic',
+                }}
+              >
+                Loading summary…
+              </p>
+            )}
+            {summary?.extract && (
+              <p
+                style={{
+                  fontSize: 14,
+                  color: 'var(--color-body)',
+                  margin: 0,
+                  lineHeight: 1.65,
+                }}
+              >
+                {summary.extract}
+              </p>
+            )}
+          </div>
         )}
 
-        <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {!person.wikipediaUrl && person.description && (
+          <div
+            style={{
+              borderTop: '1px solid var(--color-border)',
+              paddingTop: 16,
+              marginBottom: 16,
+            }}
+          >
+            <p
+              style={{
+                fontSize: 14,
+                color: 'var(--color-body)',
+                margin: 0,
+                lineHeight: 1.65,
+              }}
+            >
+              {person.description}
+            </p>
+          </div>
+        )}
+
+        {onSeeEvents && (
+          <div style={{ marginTop: 8 }}>{onSeeEvents}</div>
+        )}
+
+        <div
+          style={{
+            marginTop: 16,
+            paddingTop: 16,
+            borderTop: '1px solid var(--color-border)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}
+        >
+          {hasWikidataId && (
+            <Link
+              to={`/family-tree?root=${person.id}`}
+              onClick={onClose}
+              style={{
+                fontSize: 13,
+                color: 'var(--color-accent)',
+                textDecoration: 'underline',
+              }}
+            >
+              View tree from this person
+            </Link>
+          )}
           {person.wikipediaUrl && (
             <a
               href={person.wikipediaUrl}
