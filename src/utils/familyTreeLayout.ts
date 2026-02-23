@@ -10,10 +10,17 @@ export interface LayoutPosition {
   y: number
 }
 
+export interface CompanionChildGroup {
+  compId: string | null
+  childIds: string[]
+}
+
 export interface TreeLayoutResult {
   positions: Map<string, LayoutPosition>
   companions: Map<string, string[]>
   companionOf: Map<string, string>
+  /** Children grouped by companion pair for each structural parent that has companions. */
+  companionChildGroups: Map<string, CompanionChildGroup[]>
 }
 
 /**
@@ -33,7 +40,9 @@ export function computeTreeLayout(
   const companions = new Map<string, string[]>()
   const companionOf = new Map<string, string>()
 
-  const empty: TreeLayoutResult = { positions, companions, companionOf }
+  const companionChildGroups = new Map<string, CompanionChildGroup[]>()
+
+  const empty: TreeLayoutResult = { positions, companions, companionOf, companionChildGroups }
   if (nodes.length === 0) return empty
 
   const allRoots = nodes.filter((n) => n.childOf === undefined)
@@ -175,6 +184,47 @@ export function computeTreeLayout(
   const roots = allRoots.filter((r) => !companionOf.has(r.id))
   if (roots.length === 0) return empty
 
+  const GROUP_GAP = GAP * 1.5
+
+  function childGroupsFor(parentId: string): CompanionChildGroup[] {
+    const comps = companions.get(parentId) ?? []
+    const allChildren = structuralChildren(parentId)
+    if (comps.length === 0) {
+      return allChildren.length > 0
+        ? [{ compId: null, childIds: allChildren }]
+        : []
+    }
+
+    const compSet = new Set(comps)
+    const compChildMap = new Map<string | null, string[]>()
+
+    for (const cid of allChildren) {
+      const child = nodeMap.get(cid)
+      const otherId =
+        child?.fatherId === parentId ? child?.motherId :
+        child?.motherId === parentId ? child?.fatherId :
+        undefined
+      const matchedComp =
+        otherId && compSet.has(otherId) ? otherId : null
+      const list = compChildMap.get(matchedComp) ?? []
+      list.push(cid)
+      compChildMap.set(matchedComp, list)
+    }
+
+    const groups: CompanionChildGroup[] = []
+    for (const comp of comps) {
+      const children = compChildMap.get(comp)
+      if (children?.length) groups.push({ compId: comp, childIds: children })
+    }
+    const ungrouped = compChildMap.get(null)
+    if (ungrouped?.length) groups.push({ compId: null, childIds: ungrouped })
+
+    if (groups.length > 0) {
+      companionChildGroups.set(parentId, groups)
+    }
+    return groups
+  }
+
   const widthCache = new Map<string, number>()
 
   function subtreeWidth(id: string): number {
@@ -184,16 +234,24 @@ export function computeTreeLayout(
     const comps = companions.get(id) ?? []
     const coupleW = NODE_WIDTH + comps.length * (NODE_WIDTH + COUPLE_GAP)
 
-    const childIds = structuralChildren(id)
+    const groups = childGroupsFor(id)
+    const totalChildCount = groups.reduce((s, g) => s + g.childIds.length, 0)
 
-    if (childIds.length === 0) {
+    if (totalChildCount === 0) {
       widthCache.set(id, coupleW)
       return coupleW
     }
 
-    const childrenTotal =
-      childIds.reduce((sum, cid) => sum + subtreeWidth(cid), 0) +
-      (childIds.length - 1) * GAP
+    let childrenTotal = 0
+    for (const group of groups) {
+      const groupW =
+        group.childIds.reduce((sum, cid) => sum + subtreeWidth(cid), 0) +
+        (group.childIds.length - 1) * GAP
+      childrenTotal += groupW
+    }
+    if (groups.length > 1) {
+      childrenTotal += (groups.length - 1) * GROUP_GAP
+    }
 
     const total = Math.max(childrenTotal, coupleW)
     widthCache.set(id, total)
@@ -218,19 +276,33 @@ export function computeTreeLayout(
       positions.set(id, { x: centerX, y })
     }
 
-    const childIds = structuralChildren(id)
-    if (childIds.length === 0) return
+    const groups = childGroupsFor(id)
+    const totalChildCount = groups.reduce((s, g) => s + g.childIds.length, 0)
+    if (totalChildCount === 0) return
 
-    const childWidths = childIds.map((cid) => subtreeWidth(cid))
-    const totalWidth =
-      childWidths.reduce((s, w) => s + w, 0) + (childIds.length - 1) * GAP
+    const groupWidths = groups.map((g) =>
+      g.childIds.reduce((sum, cid) => sum + subtreeWidth(cid), 0) +
+      (g.childIds.length - 1) * GAP
+    )
+
+    let totalWidth = groupWidths.reduce((s, w) => s + w, 0)
+    if (groups.length > 1) totalWidth += (groups.length - 1) * GROUP_GAP
 
     let cursor = centerX - totalWidth / 2
 
-    for (let i = 0; i < childIds.length; i++) {
-      const childCenter = cursor + childWidths[i] / 2
-      assignPositions(childIds[i], childCenter)
-      cursor += childWidths[i] + GAP
+    for (let gi = 0; gi < groups.length; gi++) {
+      const group = groups[gi]
+      const childWidths = group.childIds.map((cid) => subtreeWidth(cid))
+
+      for (let i = 0; i < group.childIds.length; i++) {
+        const childCenter = cursor + childWidths[i] / 2
+        assignPositions(group.childIds[i], childCenter)
+        cursor += childWidths[i] + GAP
+      }
+
+      if (gi < groups.length - 1) {
+        cursor += GROUP_GAP - GAP
+      }
     }
   }
 
@@ -245,7 +317,7 @@ export function computeTreeLayout(
     cursor += rootWidths[i] + GAP
   }
 
-  return { positions, companions, companionOf }
+  return { positions, companions, companionOf, companionChildGroups }
 }
 
 export function getLayoutBounds(positions: Map<string, LayoutPosition>) {

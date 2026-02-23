@@ -36,7 +36,7 @@ interface WikidataEntity {
   labels?: { en?: { value: string } }
   descriptions?: { en?: { value: string } }
   claims?: Record<string, Array<{ mainsnak?: { datavalue?: { value: unknown } } }>>
-  sitelinks?: { enwiki?: { url: string } }
+  sitelinks?: { enwiki?: { url?: string; title?: string } }
 }
 
 function extractYear(timeValue: unknown): number | undefined {
@@ -84,7 +84,12 @@ export function entityToPerson(entityId: string, data: WikidataEntity): Person {
     imageUrl = getImageUrl(p18)
   }
 
-  const wikipediaUrl = data.sitelinks?.enwiki?.url
+  const enwiki = data.sitelinks?.enwiki
+  const wikipediaUrl =
+    enwiki?.url ??
+    (enwiki?.title
+      ? `https://en.wikipedia.org/wiki/${encodeURIComponent(enwiki.title.replace(/ /g, '_'))}`
+      : undefined)
 
   const houseId = extractEntityId(claims.P53?.[0]?.mainsnak?.datavalue?.value)
 
@@ -146,6 +151,18 @@ export function getParentIds(entity: WikidataEntity): string[] {
   return ids
 }
 
+export function getParentIdsByRole(entity: WikidataEntity): {
+  fatherId?: string
+  motherId?: string
+} {
+  const claims = entity.claims ?? {}
+  const p22 = claims.P22?.[0]?.mainsnak?.datavalue?.value
+  const p25 = claims.P25?.[0]?.mainsnak?.datavalue?.value
+  const fatherId = extractEntityId(p22)
+  const motherId = extractEntityId(p25)
+  return { fatherId, motherId }
+}
+
 export function getChildIds(entity: WikidataEntity): string[] {
   const claims = entity.claims ?? {}
   const p40 = claims.P40 ?? []
@@ -158,6 +175,8 @@ export async function fetchPersonWithRelations(qId: string): Promise<{
   person: Person
   parentIds: string[]
   childIds: string[]
+  fatherId?: string
+  motherId?: string
 } | null> {
   const id = qId.startsWith('Q') ? qId : `Q${qId}`
   const url = `${WIKIDATA_API}?action=wbgetentities&ids=${id}&languages=en&format=json&origin=*`
@@ -173,9 +192,40 @@ export async function fetchPersonWithRelations(qId: string): Promise<{
     person.houseLabel = labels.get(person.houseId) ?? undefined
   }
   const parentIds = getParentIds(entity)
+  const { fatherId, motherId } = getParentIdsByRole(entity)
   const childIds = getChildIds(entity)
 
-  return { person, parentIds, childIds }
+  return { person, parentIds, childIds, fatherId, motherId }
+}
+
+export interface WikidataSearchResult {
+  id: string
+  label: string
+  description?: string
+}
+
+export async function searchWikidataEntities(
+  query: string,
+  limit = 10
+): Promise<WikidataSearchResult[]> {
+  const trimmed = query.trim()
+  if (!trimmed) return []
+  try {
+    const url = `${WIKIDATA_API}?action=wbsearchentities&search=${encodeURIComponent(trimmed)}&language=en&limit=${limit}&format=json&origin=*`
+    const res = await fetch(url)
+    if (!res.ok) return []
+    const json = await res.json()
+    const items = json.search ?? []
+    return items
+      .filter((item: { description?: string }) => item.description !== 'Wikimedia disambiguation page')
+      .map((item: { id: string; label?: string; description?: string }) => ({
+        id: item.id,
+        label: item.label ?? item.id,
+        description: item.description,
+      }))
+  } catch {
+    return []
+  }
 }
 
 export async function fetchEntities(ids: string[]): Promise<Map<string, Person>> {
@@ -203,6 +253,49 @@ export async function fetchEntities(ids: string[]): Promise<Map<string, Person>>
     for (const person of map.values()) {
       if (person.houseId) {
         person.houseLabel = houseLabels.get(person.houseId) ?? undefined
+      }
+    }
+  }
+  return map
+}
+
+export interface PersonWithParents {
+  person: Person
+  fatherId?: string
+  motherId?: string
+}
+
+export async function fetchEntitiesWithParents(
+  ids: string[],
+): Promise<Map<string, PersonWithParents>> {
+  if (ids.length === 0) return new Map()
+  const unique = [...new Set(ids)]
+  const idParam = unique
+    .map((id) => (id.startsWith('Q') ? id : `Q${id}`))
+    .join('|')
+  const url = `${WIKIDATA_API}?action=wbgetentities&ids=${idParam}&languages=en&format=json&origin=*`
+  const res = await fetch(url)
+  if (!res.ok) return new Map()
+  const json = await res.json()
+  const entities = json.entities ?? {}
+  const map = new Map<string, PersonWithParents>()
+  const houseIds = new Set<string>()
+  for (const id of unique) {
+    const eid = id.startsWith('Q') ? id : `Q${id}`
+    const entity = entities[eid]
+    if (entity && !entity.missing) {
+      const person = entityToPerson(eid, entity)
+      if (person.houseId) houseIds.add(person.houseId)
+      const { fatherId, motherId } = getParentIdsByRole(entity)
+      map.set(eid, { person, fatherId, motherId })
+    }
+  }
+  if (houseIds.size > 0) {
+    const houseLabels = await fetchEntityLabels([...houseIds])
+    for (const entry of map.values()) {
+      if (entry.person.houseId) {
+        entry.person.houseLabel =
+          houseLabels.get(entry.person.houseId) ?? undefined
       }
     }
   }

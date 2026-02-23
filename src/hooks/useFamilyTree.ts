@@ -1,7 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import type { FamilyTreeNodeData } from '@/types/familyTreeNode'
 import type { Person } from '@/types/person'
-import { fetchPersonWithRelations, fetchEntities } from '@/services/wikidata'
+import {
+  fetchPersonWithRelations,
+  fetchEntities,
+  fetchEntitiesWithParents,
+} from '@/services/wikidata'
 
 interface UseFamilyTreeOptions {
   rootQId: string
@@ -54,31 +58,71 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
       }
 
       const childNodes: FamilyTreeNodeData[] = []
+      const companionNodes: FamilyTreeNodeData[] = []
+
       if (childIds.length > 0) {
-        const childPeople = await fetchEntities(childIds)
-        childPeople.forEach((p, id) => personMap.current.set(id, p))
+        const childData = await fetchEntitiesWithParents(childIds)
+        childData.forEach((d, id) => personMap.current.set(id, d.person))
+
+        const otherParentToChildren = new Map<string, string[]>()
+
         for (const cid of childIds) {
-          const cp = childPeople.get(cid)
+          const cd = childData.get(cid)
+          const otherId =
+            cd?.fatherId === rootQId ? cd?.motherId :
+            cd?.motherId === rootQId ? cd?.fatherId :
+            (cd?.fatherId ?? cd?.motherId)
           childNodes.push({
             id: cid,
             qId: cid,
-            name: cp?.name ?? cid,
-            avatarUrl: cp?.imageUrl,
-            birthYear: cp?.birthYear,
-            deathYear: cp?.deathYear,
-            title: cp?.title,
-            houseId: cp?.houseId,
-            houseLabel: cp?.houseLabel,
+            name: cd?.person.name ?? cid,
+            avatarUrl: cd?.person.imageUrl,
+            birthYear: cd?.person.birthYear,
+            deathYear: cd?.person.deathYear,
+            title: cd?.person.title,
+            houseId: cd?.person.houseId,
+            houseLabel: cd?.person.houseLabel,
             childOf: rootQId,
+            fatherId: cd?.fatherId,
+            motherId: cd?.motherId,
             parentOf: undefined,
             childrenFetched: false,
             parentsFetched: false,
           })
+          if (otherId && otherId !== rootQId) {
+            const list = otherParentToChildren.get(otherId) ?? []
+            list.push(cid)
+            otherParentToChildren.set(otherId, list)
+          }
+        }
+
+        if (otherParentToChildren.size > 0) {
+          const companionIds = [...otherParentToChildren.keys()]
+          const companionPeople = await fetchEntities(companionIds)
+          companionPeople.forEach((p, id) => personMap.current.set(id, p))
+          for (const [compId, compChildIds] of otherParentToChildren) {
+            const cp = companionPeople.get(compId)
+            companionNodes.push({
+              id: compId,
+              qId: compId,
+              name: cp?.name ?? compId,
+              avatarUrl: cp?.imageUrl,
+              birthYear: cp?.birthYear,
+              deathYear: cp?.deathYear,
+              title: cp?.title,
+              houseId: cp?.houseId,
+              houseLabel: cp?.houseLabel,
+              childOf: undefined,
+              parentOf: compChildIds,
+              childrenFetched: false,
+              parentsFetched: false,
+            })
+          }
         }
       }
 
       if (!cancelled) {
-        setNodes([rootNode, ...childNodes])
+        setNodes([rootNode, ...companionNodes, ...childNodes])
         removeLoading(rootQId)
       }
     }
@@ -111,39 +155,89 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
       return
     }
 
-    const childPeople = await fetchEntities(childIds)
-    childPeople.forEach((p, id) => personMap.current.set(id, p))
+    const childData = await fetchEntitiesWithParents(childIds)
+    childData.forEach((d, id) => personMap.current.set(id, d.person))
     const existingIds = new Set(nodes.map((n) => n.id))
+
+    const otherParentToChildren = new Map<string, string[]>()
 
     const newChildren: FamilyTreeNodeData[] = childIds
       .filter((cid) => !existingIds.has(cid))
       .map((cid) => {
-        const cp = childPeople.get(cid)
+        const cd = childData.get(cid)
+        const otherId =
+          cd?.fatherId === nodeId ? cd?.motherId :
+          cd?.motherId === nodeId ? cd?.fatherId :
+          (cd?.fatherId ?? cd?.motherId)
+        if (otherId && otherId !== nodeId) {
+          const list = otherParentToChildren.get(otherId) ?? []
+          list.push(cid)
+          otherParentToChildren.set(otherId, list)
+        }
         return {
           id: cid,
           qId: cid,
-          name: cp?.name ?? cid,
-          avatarUrl: cp?.imageUrl,
-          birthYear: cp?.birthYear,
-          deathYear: cp?.deathYear,
-          title: cp?.title,
-          houseId: cp?.houseId,
-          houseLabel: cp?.houseLabel,
+          name: cd?.person.name ?? cid,
+          avatarUrl: cd?.person.imageUrl,
+          birthYear: cd?.person.birthYear,
+          deathYear: cd?.person.deathYear,
+          title: cd?.person.title,
+          houseId: cd?.person.houseId,
+          houseLabel: cd?.person.houseLabel,
           childOf: nodeId,
+          fatherId: cd?.fatherId,
+          motherId: cd?.motherId,
           parentOf: undefined,
           childrenFetched: false,
           parentsFetched: false,
         }
       })
 
-    setNodes((prev) => [
-      ...prev.map((n) =>
-        n.id === nodeId
-          ? { ...n, parentOf: childIds, childrenFetched: true }
-          : n
-      ),
-      ...newChildren,
-    ])
+    const newCompanionNodes: FamilyTreeNodeData[] = []
+    if (otherParentToChildren.size > 0) {
+      const companionIds = [...otherParentToChildren.keys()].filter(
+        (id) => !existingIds.has(id)
+      )
+      if (companionIds.length > 0) {
+        const companionPeople = await fetchEntities(companionIds)
+        companionPeople.forEach((p, id) => personMap.current.set(id, p))
+        for (const compId of companionIds) {
+          const cp = companionPeople.get(compId)
+          newCompanionNodes.push({
+            id: compId,
+            qId: compId,
+            name: cp?.name ?? compId,
+            avatarUrl: cp?.imageUrl,
+            birthYear: cp?.birthYear,
+            deathYear: cp?.deathYear,
+            title: cp?.title,
+            houseId: cp?.houseId,
+            houseLabel: cp?.houseLabel,
+            childOf: undefined,
+            parentOf: otherParentToChildren.get(compId) ?? [],
+            childrenFetched: false,
+            parentsFetched: false,
+          })
+        }
+      }
+    }
+
+    setNodes((prev) => {
+      const updated = prev.map((n) => {
+        if (n.id === nodeId) {
+          return { ...n, parentOf: childIds, childrenFetched: true }
+        }
+        // If an existing node is an other-parent, add children to its parentOf
+        const compChildren = otherParentToChildren.get(n.id)
+        if (compChildren) {
+          const existing = n.parentOf ?? []
+          const merged = [...new Set([...existing, ...compChildren])]
+          return { ...n, parentOf: merged }
+        }
+        return n
+      })
+      return [...newCompanionNodes, ...updated, ...newChildren]
+    })
     removeLoading(nodeId)
   }, [nodes])
 
@@ -159,7 +253,7 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
       return
     }
 
-    const { parentIds } = result
+    const { parentIds, fatherId, motherId } = result
 
     if (parentIds.length === 0) {
       setNodes((prev) =>
@@ -204,7 +298,13 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
 
       const updated = prev.map((n) => {
         if (n.id === nodeId) {
-          return { ...n, childOf: n.childOf ?? primaryId, parentsFetched: true }
+          return {
+            ...n,
+            childOf: n.childOf ?? primaryId,
+            parentsFetched: true,
+            fatherId,
+            motherId,
+          }
         }
         // For existing parents, add this child to their parentOf
         if (parentIdSet.has(n.id)) {

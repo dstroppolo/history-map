@@ -8,6 +8,10 @@ export interface FamilyTreeNodeData {
   deathYear?: number
   /** Parent node id. Undefined for root nodes. */
   childOf?: string
+  /** Father's node id (Wikidata P22). Set when parents are fetched. */
+  fatherId?: string
+  /** Mother's node id (Wikidata P25). Set when parents are fetched. */
+  motherId?: string
   /** Child node ids. Undefined for leaf nodes. */
   parentOf?: string[]
   /** Whether children have been fetched */

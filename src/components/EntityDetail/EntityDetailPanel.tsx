@@ -11,12 +11,24 @@ interface EntityDetailPanelProps {
   person: Person
   onClose: () => void
   onSeeEvents?: React.ReactNode
+  /** Father's person id. When provided, shows a clickable father link. */
+  fatherId?: string
+  /** Mother's person id. When provided, shows a clickable mother link. */
+  motherId?: string
+  /** Look up person by id (for parent names). */
+  getPersonById?: (id: string) => Person | undefined
+  /** Called when user clicks a parent link - close drawer and focus graph on that person. */
+  onFocusNode?: (id: string) => void
 }
 
 export default function EntityDetailPanel({
   person,
   onClose,
   onSeeEvents,
+  fatherId,
+  motherId,
+  getPersonById,
+  onFocusNode,
 }: EntityDetailPanelProps) {
   const hasWikidataId = person.id.startsWith('Q') && !person.id.includes('-')
 
@@ -196,6 +208,86 @@ export default function EntityDetailPanel({
             >
               {person.description}
             </p>
+          </div>
+        )}
+
+        {/* Mother and Father */}
+        {(fatherId || motherId) && getPersonById && (
+          <div
+            style={{
+              borderTop: '1px solid var(--color-border)',
+              paddingTop: 16,
+              marginBottom: 16,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 6,
+                fontSize: 14,
+                color: 'var(--color-body)',
+              }}
+            >
+              {fatherId && (
+                <div>
+                  <span style={{ color: 'var(--color-secondary)', marginRight: 6 }}>
+                    Father:
+                  </span>
+                  {onFocusNode ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose()
+                        onFocusNode(fatherId)
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        font: 'inherit',
+                        color: 'var(--color-accent)',
+                        textDecoration: 'underline',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {getPersonById(fatherId)?.name ?? fatherId}
+                    </button>
+                  ) : (
+                    <span>{getPersonById(fatherId)?.name ?? fatherId}</span>
+                  )}
+                </div>
+              )}
+              {motherId && (
+                <div>
+                  <span style={{ color: 'var(--color-secondary)', marginRight: 6 }}>
+                    Mother:
+                  </span>
+                  {onFocusNode ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose()
+                        onFocusNode(motherId)
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        font: 'inherit',
+                        color: 'var(--color-accent)',
+                        textDecoration: 'underline',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {getPersonById(motherId)?.name ?? motherId}
+                    </button>
+                  ) : (
+                    <span>{getPersonById(motherId)?.name ?? motherId}</span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

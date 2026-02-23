@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import FamilyTreeNode from '@/components/FamilyTree/FamilyTreeNode'
 import FamilyTreeBreadcrumb from '@/components/FamilyTree/FamilyTreeBreadcrumb'
+import PersonSearchBar from '@/components/FamilyTree/PersonSearchBar'
 import EntityDetailPanel from '@/components/EntityDetail/EntityDetailPanel'
 import useFamilyTree from '@/hooks/useFamilyTree'
 import {
@@ -94,15 +95,52 @@ export default function FamilyTreePage() {
     setIsDragging(false)
   }, [])
 
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (e.touches.length !== 1) return
+      if ((e.target as HTMLElement).closest('button')) return
+      didDragRef.current = false
+      setIsDragging(true)
+      dragRef.current = {
+        x: position.x,
+        y: position.y,
+        startX: e.touches[0].clientX,
+        startY: e.touches[0].clientY,
+      }
+    },
+    [position]
+  )
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!dragRef.current || e.touches.length !== 1) return
+    e.preventDefault()
+    const t = e.touches[0]
+    const dx = t.clientX - dragRef.current.startX
+    const dy = t.clientY - dragRef.current.startY
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) didDragRef.current = true
+    setPosition({
+      x: dragRef.current.x + dx,
+      y: dragRef.current.y + dy,
+    })
+  }, [])
+
+  const handleTouchEnd = useCallback(() => {
+    dragRef.current = null
+    setIsDragging(false)
+  }, [])
+
   const { nodes, loadingIds, fetchChildren, fetchParents, getPersonById } = useFamilyTree({
     rootQId,
   })
 
   const selectedPerson = selectedNodeId ? getPersonById(selectedNodeId) : undefined
+  const selectedNode = selectedNodeId
+    ? nodes.find((n) => n.id === selectedNodeId)
+    : undefined
 
   const treeLayout = useMemo(() => computeTreeLayout(nodes), [nodes])
   const rawLayout = treeLayout.positions
-  const { companions: companionMap, companionOf } = treeLayout
+  const { companions: companionMap, companionOf, companionChildGroups } = treeLayout
   const bounds = useMemo(() => getLayoutBounds(rawLayout), [rawLayout])
 
   // Normalize layout: shift all positions so the top-left of the
@@ -123,6 +161,30 @@ export default function FamilyTreePage() {
     }
     return map
   }, [rawLayout, bounds])
+
+  const handleFocusNode = useCallback(
+    (nodeId: string) => {
+      setSelectedNodeId(null)
+      // Wait one frame so the drawer closes and the DOM reflects current positions
+      requestAnimationFrame(() => {
+        if (!containerRef.current) return
+        const nodeEl = containerRef.current.querySelector(
+          `[data-node-id="${nodeId}"]`,
+        )
+        if (!nodeEl) return
+        const containerRect = containerRef.current.getBoundingClientRect()
+        const nodeRect = nodeEl.getBoundingClientRect()
+        const dx =
+          containerRect.left + containerRect.width / 2 -
+          (nodeRect.left + nodeRect.width / 2)
+        const dy =
+          containerRect.top + containerRect.height / 2 -
+          (nodeRect.top + nodeRect.height / 2)
+        setPosition((prev) => ({ x: prev.x + dx, y: prev.y + dy }))
+      })
+    },
+    [],
+  )
 
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const [highlightHouseId, setHighlightHouseId] = useState<string | null>(null)
@@ -167,7 +229,34 @@ export default function FamilyTreePage() {
   const lines = useMemo(() => {
     type Px = { left: number; top: number; cx: number; cy: number; bottomY: number }
     const out: TreeLine[] = []
-    const parentIdsForCouple = (n: { id: string }, comps: string[]) => [n.id, ...comps]
+
+    function drawFork(
+      stemX: number,
+      stemTopY: number,
+      forkY: number,
+      childEntries: { id: string; px: Px }[],
+      parentIds: string[],
+    ) {
+      const gChildIds = childEntries.map((e) => e.id)
+      out.push({ x1: stemX, y1: stemTopY, x2: stemX, y2: forkY, childIds: gChildIds, parentIds })
+
+      if (childEntries.length === 1) {
+        const { id, px: c } = childEntries[0]
+        if (Math.abs(stemX - c.cx) < 1) {
+          out.push({ x1: stemX, y1: forkY, x2: c.cx, y2: c.top, childIds: [id], parentIds })
+        } else {
+          out.push({ x1: Math.min(stemX, c.cx), y1: forkY, x2: Math.max(stemX, c.cx), y2: forkY, childIds: [id], parentIds })
+          out.push({ x1: c.cx, y1: forkY, x2: c.cx, y2: c.top, childIds: [id], parentIds })
+        }
+      } else {
+        const leftX = Math.min(stemX, ...childEntries.map((e) => e.px.cx))
+        const rightX = Math.max(stemX, ...childEntries.map((e) => e.px.cx))
+        out.push({ x1: leftX, y1: forkY, x2: rightX, y2: forkY, childIds: gChildIds, parentIds })
+        for (const { id, px: c } of childEntries) {
+          out.push({ x1: c.cx, y1: forkY, x2: c.cx, y2: c.top, childIds: [id], parentIds })
+        }
+      }
+    }
 
     const drawnCouples = new Set<string>()
 
@@ -178,83 +267,81 @@ export default function FamilyTreePage() {
       if (!parentPx) continue
 
       const comps = companionMap.get(node.id) ?? []
-      const parentIds = parentIdsForCouple(node, comps)
-
-      const allChildIds = new Set(node.parentOf ?? [])
-      for (const cid of comps) {
-        const comp = nodes.find((n) => n.id === cid)
-        if (comp?.parentOf) comp.parentOf.forEach((id) => allChildIds.add(id))
-      }
-      if (allChildIds.size === 0) continue
-
-      const childEntries = [...allChildIds]
-        .map((id) => ({ id, px: pixelPos.get(id) }))
-        .filter((e): e is { id: string; px: Px } => !!e.px && e.px.top > parentPx.top)
-
-      if (childEntries.length === 0) continue
-
-      const allParentPx: Px[] = [parentPx]
-      for (const cid of comps) {
-        const cpx = pixelPos.get(cid)
-        if (cpx) allParentPx.push(cpx)
-      }
-
       const coupleKey = [node.id, ...comps].sort().join('|')
       if (drawnCouples.has(coupleKey)) continue
       drawnCouples.add(coupleKey)
 
-      const allIds = childEntries.map((e) => e.id)
+      const allChildIdSet = new Set(node.parentOf ?? [])
+      for (const cid of comps) {
+        const comp = nodes.find((n) => n.id === cid)
+        if (comp?.parentOf) comp.parentOf.forEach((id) => allChildIdSet.add(id))
+      }
+      if (allChildIdSet.size === 0) continue
 
-      if (allParentPx.length > 1) {
-        const leftPx = Math.min(...allParentPx.map((p) => p.cx))
-        const rightPx = Math.max(...allParentPx.map((p) => p.cx))
-        const coupleBottomY = parentPx.bottomY
+      const coupleBottomY = parentPx.bottomY
 
-        out.push({ x1: leftPx, y1: coupleBottomY, x2: rightPx, y2: coupleBottomY, childIds: allIds, parentIds })
+      if (comps.length > 0) {
+        const compPxList = comps.map((cid) => pixelPos.get(cid)).filter(Boolean) as Px[]
+        const allCx = [parentPx.cx, ...compPxList.map((p) => p.cx)]
+        const cplLeftX = Math.min(...allCx)
+        const cplRightX = Math.max(...allCx)
+        const allChildIds = [...allChildIdSet]
+        const allParentIds = [node.id, ...comps]
 
-        const coupleMidX = (leftPx + rightPx) / 2
-        const forkY = coupleBottomY + GAP / 2
+        out.push({ x1: cplLeftX, y1: coupleBottomY, x2: cplRightX, y2: coupleBottomY, childIds: allChildIds, parentIds: allParentIds })
 
-        out.push({ x1: coupleMidX, y1: coupleBottomY, x2: coupleMidX, y2: forkY, childIds: allIds, parentIds })
+        const groups = companionChildGroups.get(node.id)
 
-        if (childEntries.length === 1) {
-          const { id, px: c } = childEntries[0]
-          if (Math.abs(coupleMidX - c.cx) < 1) {
-            out.push({ x1: coupleMidX, y1: forkY, x2: c.cx, y2: c.top, childIds: [id], parentIds })
-          } else {
-            out.push({ x1: Math.min(coupleMidX, c.cx), y1: forkY, x2: Math.max(coupleMidX, c.cx), y2: forkY, childIds: [id], parentIds })
-            out.push({ x1: c.cx, y1: forkY, x2: c.cx, y2: c.top, childIds: [id], parentIds })
+        if (groups && groups.length > 0) {
+          const forkY = coupleBottomY + GAP / 2
+          for (const group of groups) {
+            const pairParentIds = group.compId ? [node.id, group.compId] : [node.id]
+            let stemX: number
+            if (group.compId) {
+              const compPx = pixelPos.get(group.compId)
+              stemX = compPx ? (parentPx.cx + compPx.cx) / 2 : parentPx.cx
+            } else {
+              stemX = parentPx.cx
+            }
+
+            const childEntries = group.childIds
+              .map((id) => ({ id, px: pixelPos.get(id) }))
+              .filter((e): e is { id: string; px: Px } => !!e.px && e.px.top > parentPx.top)
+
+            if (childEntries.length === 0) continue
+            drawFork(stemX, coupleBottomY, forkY, childEntries, pairParentIds)
           }
         } else {
-          const leftX = Math.min(coupleMidX, ...childEntries.map((e) => e.px.cx))
-          const rightX = Math.max(coupleMidX, ...childEntries.map((e) => e.px.cx))
-          out.push({ x1: leftX, y1: forkY, x2: rightX, y2: forkY, childIds: allIds, parentIds })
-          for (const { id, px: c } of childEntries) {
-            out.push({ x1: c.cx, y1: forkY, x2: c.cx, y2: c.top, childIds: [id], parentIds })
+          const childEntries = allChildIds
+            .map((id) => ({ id, px: pixelPos.get(id) }))
+            .filter((e): e is { id: string; px: Px } => !!e.px && e.px.top > parentPx.top)
+          if (childEntries.length > 0) {
+            const coupleMidX = (cplLeftX + cplRightX) / 2
+            const forkY = coupleBottomY + GAP / 2
+            drawFork(coupleMidX, coupleBottomY, forkY, childEntries, allParentIds)
           }
         }
       } else {
-        const parentBottomX = parentPx.cx
-        const parentBottomY = parentPx.bottomY
+        const allChildIds = [...allChildIdSet]
+        const parentIds = [node.id]
+        const childEntries = allChildIds
+          .map((id) => ({ id, px: pixelPos.get(id) }))
+          .filter((e): e is { id: string; px: Px } => !!e.px && e.px.top > parentPx.top)
+
+        if (childEntries.length === 0) continue
 
         if (childEntries.length === 1) {
           const { id, px: c } = childEntries[0]
-          out.push({ x1: parentBottomX, y1: parentBottomY, x2: c.cx, y2: c.top, childIds: [id], parentIds })
+          out.push({ x1: parentPx.cx, y1: coupleBottomY, x2: c.cx, y2: c.top, childIds: [id], parentIds })
         } else {
-          const forkY = parentBottomY + GAP / 2
-          const leftX = Math.min(parentBottomX, ...childEntries.map((e) => e.px.cx))
-          const rightX = Math.max(parentBottomX, ...childEntries.map((e) => e.px.cx))
-          out.push({ x1: parentBottomX, y1: parentBottomY, x2: parentBottomX, y2: forkY, childIds: allIds, parentIds })
-          out.push({ x1: leftX, y1: forkY, x2: rightX, y2: forkY, childIds: allIds, parentIds })
-          for (const { id, px: c } of childEntries) {
-            out.push({ x1: c.cx, y1: forkY, x2: c.cx, y2: c.top, childIds: [id], parentIds })
-          }
+          const forkY = coupleBottomY + GAP / 2
+          drawFork(parentPx.cx, coupleBottomY, forkY, childEntries, parentIds)
         }
       }
     }
 
     return out
-  }, [nodes, pixelPos, companionMap, companionOf])
+  }, [nodes, pixelPos, companionMap, companionOf, companionChildGroups])
 
   return (
     <motion.div
@@ -299,6 +386,9 @@ export default function FamilyTreePage() {
             </select>
           </label>
         )}
+        <div style={{ marginLeft: 'auto' }}>
+          <PersonSearchBar />
+        </div>
       </div>
       {/* Tree canvas - zoomable and pannable */}
       <div
@@ -312,11 +402,16 @@ export default function FamilyTreePage() {
           overflow: 'hidden',
           position: 'relative',
           cursor: isDragging ? 'grabbing' : 'grab',
+          touchAction: 'none',
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
       >
         <div
           style={{
@@ -379,6 +474,7 @@ export default function FamilyTreePage() {
               return (
                 <div
                   key={node.id}
+                  data-node-id={node.id}
                   style={{
                     position: 'absolute',
                     left: px.left,
@@ -415,6 +511,10 @@ export default function FamilyTreePage() {
           <EntityDetailPanel
             person={selectedPerson}
             onClose={() => setSelectedNodeId(null)}
+            fatherId={selectedNode?.fatherId}
+            motherId={selectedNode?.motherId}
+            getPersonById={getPersonById}
+            onFocusNode={handleFocusNode}
           />
         )}
       </AnimatePresence>
