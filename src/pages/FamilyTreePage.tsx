@@ -29,6 +29,10 @@ const LINE_WIDTH = 2
 const LINE_WIDTH_HIGHLIGHT = 3.5
 const MAX_SCALE = 3
 const ZOOM_STEP = 0.15
+const PINCH_SMOOTHING = 0.35
+const INERTIA_FRICTION = 0.92
+const INERTIA_MIN_SPEED = 0.02
+const DRAG_VELOCITY_BLEND = 0.2
 
 type Point = { x: number; y: number }
 type PinchState = {
@@ -37,6 +41,13 @@ type PinchState = {
   initialPosition: Point
   initialCenter: Point
   containerCenter: Point
+}
+type DragVelocity = {
+  vx: number
+  vy: number
+  lastX: number
+  lastY: number
+  lastTime: number
 }
 
 const clampScale = (value: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, value))
@@ -55,7 +66,9 @@ export default function FamilyTreePage() {
   const [scale, setScale] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const dragRef = useRef<{ x: number; y: number; startX: number; startY: number } | null>(null)
+  const dragVelocityRef = useRef<DragVelocity | null>(null)
   const pinchRef = useRef<PinchState | null>(null)
+  const inertiaFrameRef = useRef<number | null>(null)
   const scaleRef = useRef(scale)
   const positionRef = useRef(position)
   const [isDragging, setIsDragging] = useState(false)
@@ -75,10 +88,65 @@ export default function FamilyTreePage() {
     positionRef.current = position
   }, [position])
 
+  const stopInertia = useCallback(() => {
+    if (inertiaFrameRef.current === null) return
+    cancelAnimationFrame(inertiaFrameRef.current)
+    inertiaFrameRef.current = null
+  }, [])
+
+  const setPositionAndRef = useCallback((nextPosition: Point) => {
+    positionRef.current = nextPosition
+    setPosition(nextPosition)
+  }, [])
+
+  const setTransformAndRefs = useCallback((nextScale: number, nextPosition: Point) => {
+    scaleRef.current = nextScale
+    positionRef.current = nextPosition
+    setScale(nextScale)
+    setPosition(nextPosition)
+  }, [])
+
+  const startInertia = useCallback((vx: number, vy: number) => {
+    stopInertia()
+    let velocityX = vx
+    let velocityY = vy
+    let lastTs = performance.now()
+
+    const step = (now: number) => {
+      const dt = now - lastTs
+      lastTs = now
+
+      setPositionAndRef({
+        x: positionRef.current.x + velocityX * dt,
+        y: positionRef.current.y + velocityY * dt,
+      })
+
+      const decay = Math.pow(INERTIA_FRICTION, dt / 16.67)
+      velocityX *= decay
+      velocityY *= decay
+
+      if (Math.hypot(velocityX, velocityY) < INERTIA_MIN_SPEED) {
+        inertiaFrameRef.current = null
+        return
+      }
+      inertiaFrameRef.current = requestAnimationFrame(step)
+    }
+
+    inertiaFrameRef.current = requestAnimationFrame(step)
+  }, [setPositionAndRef, stopInertia])
+
+  useEffect(() => {
+    return () => stopInertia()
+  }, [stopInertia])
+
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault()
     const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
-    setScale((s) => clampScale(s + delta))
+    setScale((s) => {
+      const next = clampScale(s + delta)
+      scaleRef.current = next
+      return next
+    })
   }, [])
 
   useEffect(() => {
@@ -91,15 +159,17 @@ export default function FamilyTreePage() {
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return
     if ((e.target as HTMLElement).closest('button')) return
+    stopInertia()
+    pinchRef.current = null
     didDragRef.current = false
     setIsDragging(true)
     dragRef.current = {
-      x: position.x,
-      y: position.y,
+      x: positionRef.current.x,
+      y: positionRef.current.y,
       startX: e.clientX,
       startY: e.clientY,
     }
-  }, [position])
+  }, [stopInertia])
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
@@ -107,12 +177,12 @@ export default function FamilyTreePage() {
       const dx = e.clientX - dragRef.current.startX
       const dy = e.clientY - dragRef.current.startY
       if (Math.abs(dx) > 4 || Math.abs(dy) > 4) didDragRef.current = true
-      setPosition({
+      setPositionAndRef({
         x: dragRef.current.x + dx,
         y: dragRef.current.y + dy,
       })
     },
-    []
+    [setPositionAndRef]
   )
 
   const handleMouseUp = useCallback(() => {
@@ -127,6 +197,8 @@ export default function FamilyTreePage() {
 
   const startPinchGesture = useCallback((touches: React.TouchList) => {
     if (touches.length < 2 || !containerRef.current) return false
+    stopInertia()
+    dragVelocityRef.current = null
     const first = touches[0]
     const second = touches[1]
     const initialDistance = getTouchDistance(first, second)
@@ -147,11 +219,12 @@ export default function FamilyTreePage() {
     dragRef.current = null
     setIsDragging(true)
     return true
-  }, [])
+  }, [stopInertia])
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
       if ((e.target as HTMLElement).closest('button')) return
+      stopInertia()
 
       if (e.touches.length === 2) {
         startPinchGesture(e.touches)
@@ -168,8 +241,15 @@ export default function FamilyTreePage() {
         startX: t.clientX,
         startY: t.clientY,
       }
+      dragVelocityRef.current = {
+        vx: 0,
+        vy: 0,
+        lastX: t.clientX,
+        lastY: t.clientY,
+        lastTime: performance.now(),
+      }
     },
-    [startPinchGesture]
+    [startPinchGesture, stopInertia]
   )
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
@@ -185,10 +265,10 @@ export default function FamilyTreePage() {
       if (!distance) return
 
       const center = getTouchCenter(first, second)
-      const nextScale = clampScale(
+      const targetScale = clampScale(
         pinch.initialScale * (distance / pinch.initialDistance),
       )
-      const scaleRatio = nextScale / pinch.initialScale
+      const scaleRatio = targetScale / pinch.initialScale
 
       // Keep the initial pinch focal point under the users' fingers.
       const offsetX =
@@ -196,11 +276,23 @@ export default function FamilyTreePage() {
       const offsetY =
         pinch.initialCenter.y - pinch.containerCenter.y - pinch.initialPosition.y
 
-      setScale(nextScale)
-      setPosition({
+      const targetPosition = {
         x: center.x - pinch.containerCenter.x - offsetX * scaleRatio,
         y: center.y - pinch.containerCenter.y - offsetY * scaleRatio,
-      })
+      }
+      const nextScale =
+        scaleRef.current + (targetScale - scaleRef.current) * PINCH_SMOOTHING
+      const nextPosition = {
+        x:
+          positionRef.current.x +
+          (targetPosition.x - positionRef.current.x) * PINCH_SMOOTHING,
+        y:
+          positionRef.current.y +
+          (targetPosition.y - positionRef.current.y) * PINCH_SMOOTHING,
+      }
+
+      setTransformAndRefs(nextScale, nextPosition)
+      dragVelocityRef.current = null
       didDragRef.current = true
       return
     }
@@ -212,11 +304,29 @@ export default function FamilyTreePage() {
     const dx = t.clientX - dragRef.current.startX
     const dy = t.clientY - dragRef.current.startY
     if (Math.abs(dx) > 4 || Math.abs(dy) > 4) didDragRef.current = true
-    setPosition({
+    setPositionAndRef({
       x: dragRef.current.x + dx,
       y: dragRef.current.y + dy,
     })
-  }, [startPinchGesture])
+
+    const velocity = dragVelocityRef.current
+    if (!velocity) return
+    const now = performance.now()
+    const dt = now - velocity.lastTime
+    if (dt > 0) {
+      const instantVx = (t.clientX - velocity.lastX) / dt
+      const instantVy = (t.clientY - velocity.lastY) / dt
+      velocity.vx =
+        velocity.vx * (1 - DRAG_VELOCITY_BLEND) +
+        instantVx * DRAG_VELOCITY_BLEND
+      velocity.vy =
+        velocity.vy * (1 - DRAG_VELOCITY_BLEND) +
+        instantVy * DRAG_VELOCITY_BLEND
+      velocity.lastX = t.clientX
+      velocity.lastY = t.clientY
+      velocity.lastTime = now
+    }
+  }, [setPositionAndRef, setTransformAndRefs, startPinchGesture])
 
   const handleTouchEnd = useCallback(
     (e: React.TouchEvent) => {
@@ -234,6 +344,13 @@ export default function FamilyTreePage() {
           startX: t.clientX,
           startY: t.clientY,
         }
+        dragVelocityRef.current = {
+          vx: 0,
+          vy: 0,
+          lastX: t.clientX,
+          lastY: t.clientY,
+          lastTime: performance.now(),
+        }
         setIsDragging(true)
         return
       }
@@ -241,9 +358,23 @@ export default function FamilyTreePage() {
       pinchRef.current = null
       dragRef.current = null
       setIsDragging(false)
+
+      const velocity = dragVelocityRef.current
+      dragVelocityRef.current = null
+      if (!velocity) return
+      const speed = Math.hypot(velocity.vx, velocity.vy)
+      if (speed < INERTIA_MIN_SPEED) return
+      startInertia(velocity.vx, velocity.vy)
     },
-    [startPinchGesture]
+    [startInertia, startPinchGesture]
   )
+
+  const handleTouchCancel = useCallback(() => {
+    pinchRef.current = null
+    dragRef.current = null
+    dragVelocityRef.current = null
+    setIsDragging(false)
+  }, [])
 
   const { nodes, loadingIds, fetchChildren, fetchParents, getPersonById } = useFamilyTree({
     rootQId,
@@ -280,6 +411,7 @@ export default function FamilyTreePage() {
 
   const handleFocusNode = useCallback(
     (nodeId: string) => {
+      stopInertia()
       setSelectedNodeId(null)
       // Wait one frame so the drawer closes and the DOM reflects current positions
       requestAnimationFrame(() => {
@@ -296,10 +428,14 @@ export default function FamilyTreePage() {
         const dy =
           containerRect.top + containerRect.height / 2 -
           (nodeRect.top + nodeRect.height / 2)
-        setPosition((prev) => ({ x: prev.x + dx, y: prev.y + dy }))
+        setPosition((prev) => {
+          const next = { x: prev.x + dx, y: prev.y + dy }
+          positionRef.current = next
+          return next
+        })
       })
     },
-    [],
+    [stopInertia],
   )
 
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
@@ -527,7 +663,7 @@ export default function FamilyTreePage() {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
+        onTouchCancel={handleTouchCancel}
       >
         <div
           style={{
