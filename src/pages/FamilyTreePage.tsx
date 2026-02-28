@@ -30,12 +30,34 @@ const LINE_WIDTH_HIGHLIGHT = 3.5
 const MAX_SCALE = 3
 const ZOOM_STEP = 0.15
 
+type Point = { x: number; y: number }
+type PinchState = {
+  initialDistance: number
+  initialScale: number
+  initialPosition: Point
+  initialCenter: Point
+  containerCenter: Point
+}
+
+const clampScale = (value: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, value))
+const getTouchDistance = (
+  a: Pick<Touch, 'clientX' | 'clientY'>,
+  b: Pick<Touch, 'clientX' | 'clientY'>,
+) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
+const getTouchCenter = (
+  a: Pick<Touch, 'clientX' | 'clientY'>,
+  b: Pick<Touch, 'clientX' | 'clientY'>,
+): Point => ({ x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 })
+
 export default function FamilyTreePage() {
   const rootQId = useRootFromUrl()
   const containerRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const dragRef = useRef<{ x: number; y: number; startX: number; startY: number } | null>(null)
+  const pinchRef = useRef<PinchState | null>(null)
+  const scaleRef = useRef(scale)
+  const positionRef = useRef(position)
   const [isDragging, setIsDragging] = useState(false)
   const didDragRef = useRef(false)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
@@ -45,10 +67,18 @@ export default function FamilyTreePage() {
     setSelectedNodeId(null)
   }, [rootQId])
 
+  useEffect(() => {
+    scaleRef.current = scale
+  }, [scale])
+
+  useEffect(() => {
+    positionRef.current = position
+  }, [position])
+
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault()
     const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
-    setScale((s) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, s + delta)))
+    setScale((s) => clampScale(s + delta))
   }, [])
 
   useEffect(() => {
@@ -95,24 +125,88 @@ export default function FamilyTreePage() {
     setIsDragging(false)
   }, [])
 
+  const startPinchGesture = useCallback((touches: React.TouchList) => {
+    if (touches.length < 2 || !containerRef.current) return false
+    const first = touches[0]
+    const second = touches[1]
+    const initialDistance = getTouchDistance(first, second)
+    if (!initialDistance) return false
+
+    const rect = containerRef.current.getBoundingClientRect()
+    pinchRef.current = {
+      initialDistance,
+      initialScale: scaleRef.current,
+      initialPosition: { ...positionRef.current },
+      initialCenter: getTouchCenter(first, second),
+      containerCenter: {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      },
+    }
+    didDragRef.current = true
+    dragRef.current = null
+    setIsDragging(true)
+    return true
+  }, [])
+
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
-      if (e.touches.length !== 1) return
       if ((e.target as HTMLElement).closest('button')) return
+
+      if (e.touches.length === 2) {
+        startPinchGesture(e.touches)
+        return
+      }
+      if (e.touches.length !== 1 || pinchRef.current) return
+
       didDragRef.current = false
       setIsDragging(true)
+      const t = e.touches[0]
       dragRef.current = {
-        x: position.x,
-        y: position.y,
-        startX: e.touches[0].clientX,
-        startY: e.touches[0].clientY,
+        x: positionRef.current.x,
+        y: positionRef.current.y,
+        startX: t.clientX,
+        startY: t.clientY,
       }
     },
-    [position]
+    [startPinchGesture]
   )
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!dragRef.current || e.touches.length !== 1) return
+    if (e.touches.length === 2) {
+      e.preventDefault()
+      if (!pinchRef.current && !startPinchGesture(e.touches)) return
+      const pinch = pinchRef.current
+      if (!pinch) return
+
+      const first = e.touches[0]
+      const second = e.touches[1]
+      const distance = getTouchDistance(first, second)
+      if (!distance) return
+
+      const center = getTouchCenter(first, second)
+      const nextScale = clampScale(
+        pinch.initialScale * (distance / pinch.initialDistance),
+      )
+      const scaleRatio = nextScale / pinch.initialScale
+
+      // Keep the initial pinch focal point under the users' fingers.
+      const offsetX =
+        pinch.initialCenter.x - pinch.containerCenter.x - pinch.initialPosition.x
+      const offsetY =
+        pinch.initialCenter.y - pinch.containerCenter.y - pinch.initialPosition.y
+
+      setScale(nextScale)
+      setPosition({
+        x: center.x - pinch.containerCenter.x - offsetX * scaleRatio,
+        y: center.y - pinch.containerCenter.y - offsetY * scaleRatio,
+      })
+      didDragRef.current = true
+      return
+    }
+
+    if (e.touches.length !== 1 || pinchRef.current || !dragRef.current) return
+
     e.preventDefault()
     const t = e.touches[0]
     const dx = t.clientX - dragRef.current.startX
@@ -122,12 +216,34 @@ export default function FamilyTreePage() {
       x: dragRef.current.x + dx,
       y: dragRef.current.y + dy,
     })
-  }, [])
+  }, [startPinchGesture])
 
-  const handleTouchEnd = useCallback(() => {
-    dragRef.current = null
-    setIsDragging(false)
-  }, [])
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (e.touches.length >= 2) {
+        startPinchGesture(e.touches)
+        return
+      }
+
+      if (e.touches.length === 1 && pinchRef.current) {
+        pinchRef.current = null
+        const t = e.touches[0]
+        dragRef.current = {
+          x: positionRef.current.x,
+          y: positionRef.current.y,
+          startX: t.clientX,
+          startY: t.clientY,
+        }
+        setIsDragging(true)
+        return
+      }
+
+      pinchRef.current = null
+      dragRef.current = null
+      setIsDragging(false)
+    },
+    [startPinchGesture]
+  )
 
   const { nodes, loadingIds, fetchChildren, fetchParents, getPersonById } = useFamilyTree({
     rootQId,
