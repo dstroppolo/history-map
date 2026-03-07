@@ -204,25 +204,59 @@ export interface WikidataSearchResult {
   description?: string
 }
 
+const WIKIDATA_Q_HUMAN = 'Q5'
+const WIKIDATA_P_INSTANCE_OF = 'P31'
+
+type ClaimSnak = { mainsnak?: { datavalue?: { value?: { id?: string } } } }
+
+/** Returns true if the entity has P31 (instance of) = Q5 (human). */
+function entityIsHuman(claims: Record<string, Array<ClaimSnak>> | undefined): boolean {
+  if (!claims?.[WIKIDATA_P_INSTANCE_OF]) return false
+  return claims[WIKIDATA_P_INSTANCE_OF].some(
+    (c) => c.mainsnak?.datavalue?.value?.id === WIKIDATA_Q_HUMAN
+  )
+}
+
 export async function searchWikidataEntities(
   query: string,
-  limit = 10
+  limit = 10,
+  personsOnly = false
 ): Promise<WikidataSearchResult[]> {
   const trimmed = query.trim()
   if (!trimmed) return []
   try {
-    const url = `${WIKIDATA_API}?action=wbsearchentities&search=${encodeURIComponent(trimmed)}&language=en&limit=${limit}&format=json&origin=*`
+    const searchLimit = personsOnly ? Math.max(limit * 3, 20) : limit
+    const url = `${WIKIDATA_API}?action=wbsearchentities&search=${encodeURIComponent(trimmed)}&language=en&limit=${searchLimit}&format=json&origin=*`
     const res = await fetch(url)
     if (!res.ok) return []
     const json = await res.json()
-    const items = json.search ?? []
-    return items
+    let items = (json.search ?? [])
       .filter((item: { description?: string }) => item.description !== 'Wikimedia disambiguation page')
       .map((item: { id: string; label?: string; description?: string }) => ({
         id: item.id,
         label: item.label ?? item.id,
         description: item.description,
       }))
+
+    if (personsOnly && items.length > 0) {
+      const ids = items.map((i: WikidataSearchResult) => i.id).join('|')
+      const entityRes = await fetch(
+        `${WIKIDATA_API}?action=wbgetentities&ids=${ids}&props=claims&format=json&origin=*`
+      )
+      if (!entityRes.ok) return items.slice(0, limit)
+      const entityJson = await entityRes.json()
+      const entities = entityJson.entities ?? {}
+      const humanIds = new Set(
+        Object.entries(entities)
+          .filter(([, e]) => e && !(e as { missing?: number }).missing && entityIsHuman((e as { claims?: Record<string, ClaimSnak[]> }).claims))
+          .map(([id]) => id)
+      )
+      items = items.filter((item: WikidataSearchResult) => humanIds.has(item.id)).slice(0, limit)
+    } else {
+      items = items.slice(0, limit)
+    }
+
+    return items
   } catch {
     return []
   }

@@ -22,7 +22,7 @@ export default function PersonSearchBar() {
     }
     setLoading(true)
     const timer = setTimeout(async () => {
-      const items = await searchWikidataEntities(query.trim(), 8)
+      const items = await searchWikidataEntities(query.trim(), 8, true)
       setResults(items)
       setLoading(false)
       setOpen(true)
