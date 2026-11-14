@@ -19,7 +19,7 @@ function App() {
             path="/family-tree"
             element={
               <Suspense
-                fallback={<div style={{ height: 'calc(100vh - 64px)', background: '#05060D' }} />}
+                fallback={<div style={{ height: 'calc(100dvh - 64px)', background: '#05060D' }} />}
               >
                 <FamilyTreePage />
               </Suspense>

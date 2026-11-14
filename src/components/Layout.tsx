@@ -14,7 +14,8 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   return (
     <div
       style={{
-        minHeight: '100vh',
+        // dvh tracks the visible area as mobile browser bars show and hide.
+        minHeight: '100dvh',
         display: 'flex',
         flexDirection: 'column',
         ...(dark ? DARK_CHROME : null),
@@ -36,13 +37,14 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
           style={{
             color: 'var(--color-primary)',
             fontSize: 20,
+            whiteSpace: 'nowrap',
             fontWeight: 600,
             textDecoration: 'none',
           }}
         >
           History Map
         </NavLink>
-        <nav style={{ display: 'flex', gap: 32 }}>
+        <nav style={{ display: 'flex', gap: 'clamp(12px, 4vw, 32px)', whiteSpace: 'nowrap' }}>
           <NavLink
             to="/timeline"
             className={({ isActive }) =>

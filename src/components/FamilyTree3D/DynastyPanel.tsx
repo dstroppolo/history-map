@@ -81,10 +81,12 @@ export default function DynastyPanel({
       </div>
 
       <div className="dynasty-panel__body">
-        {houseLabel && <span className="dynasty-panel__house">{houseLabel}</span>}
-        <h2>{person.name}</h2>
-        {person.title && <p className="dynasty-panel__title">{person.title}</p>}
-        {lifespan && <p className="dynasty-panel__years">{lifespan}</p>}
+        <header className="dynasty-panel__header">
+          {houseLabel && <span className="dynasty-panel__house">{houseLabel}</span>}
+          <h2>{person.name}</h2>
+          {person.title && <p className="dynasty-panel__title">{person.title}</p>}
+          {lifespan && <p className="dynasty-panel__years">{lifespan}</p>}
+        </header>
 
         {summaryLoading && <p className="dynasty-panel__loading">Consulting the archives…</p>}
         {body && <p className="dynasty-panel__summary">{body}</p>}

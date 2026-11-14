@@ -42,6 +42,10 @@ const CameraRig = forwardRef<RigHandle, CameraRigProps>(function CameraRig(
   const sizeRef = useRef(size)
   sizeRef.current = size
 
+  /** Pull back on tall, narrow screens so a couple and their children still fit. */
+  const homeDist = () =>
+    HOME_DIST * Math.max(1, 0.8 / (sizeRef.current.width / sizeRef.current.height))
+
   const rig = useRef({
     // Desired
     tx: 0,
@@ -52,6 +56,7 @@ const CameraRig = forwardRef<RigHandle, CameraRigProps>(function CameraRig(
     cy: 9,
     cd: 70,
     shift: 0,
+    lift: 0,
     // Follow
     follow: rootId as string | null,
     followDrop: HOME_DROP,
@@ -84,7 +89,7 @@ const CameraRig = forwardRef<RigHandle, CameraRigProps>(function CameraRig(
         const r = rig.current
         r.follow = rootId
         r.followDrop = HOME_DROP
-        r.dist = HOME_DIST
+        r.dist = homeDist()
         r.vx = 0
         r.vy = 0
       },
@@ -97,7 +102,7 @@ const CameraRig = forwardRef<RigHandle, CameraRigProps>(function CameraRig(
     const r = rig.current
     r.tx = 0
     r.ty = HOME_DROP
-    r.dist = HOME_DIST
+    r.dist = homeDist()
     r.cx = 0
     r.cy = 9
     r.cd = 70
@@ -240,8 +245,12 @@ const CameraRig = forwardRef<RigHandle, CameraRigProps>(function CameraRig(
     r.cd += (r.dist - r.cd) * dampK(3.4, dt)
 
     const halfW = r.cd * TAN_HALF_FOV * (sizeRef.current.width / sizeRef.current.height)
-    const wantShift = panelOpen && sizeRef.current.width > 900 ? halfW * 0.3 : 0
+    const wide = sizeRef.current.width > 900
+    const wantShift = panelOpen && wide ? halfW * 0.3 : 0
     r.shift += (wantShift - r.shift) * dampK(3, dt)
+    // On narrow screens the panel is a bottom sheet: lift the subject above it.
+    const wantLift = panelOpen && !wide ? r.cd * TAN_HALF_FOV * 0.4 : 0
+    r.lift += (wantLift - r.lift) * dampK(3, dt)
 
     const ease = dampK(2.5, dt)
     r.px += (r.mx - r.px) * ease
@@ -250,8 +259,9 @@ const CameraRig = forwardRef<RigHandle, CameraRigProps>(function CameraRig(
 
     const lookX = r.cx + r.shift
     const lookZ = depthAt(r.cx)
-    camera.position.set(lookX + r.px * sway, r.cy + r.py * sway * 0.7, lookZ + r.cd)
-    camera.lookAt(lookX, r.cy, lookZ)
+    const lookY = r.cy - r.lift
+    camera.position.set(lookX + r.px * sway, lookY + r.py * sway * 0.7, lookZ + r.cd)
+    camera.lookAt(lookX, lookY, lookZ)
   })
 
   return null
