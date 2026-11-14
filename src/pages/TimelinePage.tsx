@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { config } from '@/config'
-import { dummyEventsByYear, dummyOnThisDay } from '@/data/dummy'
+import type { Event } from '@/types/event'
 import EventCard from '@/components/Timeline/EventCard'
+import EventDetailPanel from '@/components/Timeline/EventDetailPanel'
+import { useEventsForYear, useOnThisDay } from '@/hooks/useTimelineEvents'
 
 export default function TimelinePage() {
   const [searchParams] = useSearchParams()
@@ -22,8 +24,9 @@ export default function TimelinePage() {
     }
   }, [yearParam])
 
-  const events = dummyEventsByYear[year] ?? []
-  const onThisDay = dummyOnThisDay
+  const { events, loading: eventsLoading, error: eventsError } = useEventsForYear(year)
+  const { events: onThisDay, loading: onThisDayLoading, error: onThisDayError } = useOnThisDay()
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
 
   return (
     <motion.div
@@ -95,6 +98,11 @@ export default function TimelinePage() {
         >
           On this day
         </h2>
+        {onThisDayError && (
+          <p style={{ fontSize: 13, color: 'var(--color-error, #c00)', marginBottom: 8 }}>
+            {onThisDayError.message}
+          </p>
+        )}
         <div
           style={{
             display: 'flex',
@@ -103,16 +111,27 @@ export default function TimelinePage() {
             paddingBottom: 8,
           }}
         >
-          {onThisDay.map((event, i) => (
-            <motion.div
-              key={event.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-            >
-              <EventCard event={event} compact />
-            </motion.div>
-          ))}
+          {onThisDayLoading ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span className="timeline-spinner" />
+              <span style={{ fontSize: 13, color: 'var(--color-secondary)' }}>Loading…</span>
+            </div>
+          ) : (
+            onThisDay.map((event, i) => (
+              <motion.div
+                key={event.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                onClick={() => setSelectedEvent(event)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && setSelectedEvent(event)}
+              >
+                <EventCard event={event} compact />
+              </motion.div>
+            ))
+          )}
         </div>
       </section>
 
@@ -137,6 +156,11 @@ export default function TimelinePage() {
         >
           Click any event to explore in knowledge graph
         </p>
+        {eventsError && (
+          <p style={{ fontSize: 13, color: 'var(--color-error, #c00)', marginBottom: 16 }}>
+            {eventsError.message}
+          </p>
+        )}
         <div
           style={{
             display: 'grid',
@@ -144,13 +168,22 @@ export default function TimelinePage() {
             gap: 16,
           }}
         >
-          {events.length > 0 ? (
+          {eventsLoading ? (
+            <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 8, padding: '24px 0' }}>
+              <span className="timeline-spinner" />
+              <span style={{ color: 'var(--color-secondary)' }}>Loading events…</span>
+            </div>
+          ) : events.length > 0 ? (
             events.map((event, i) => (
               <motion.div
                 key={event.id}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
+                onClick={() => setSelectedEvent(event)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && setSelectedEvent(event)}
               >
                 <EventCard event={event} />
               </motion.div>
@@ -162,11 +195,12 @@ export default function TimelinePage() {
                 gridColumn: '1 / -1',
               }}
             >
-              No notable events for {year}. Try 1770–1780 for sample data.
+              No notable events for {year}.
             </p>
           )}
         </div>
       </section>
+      <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
     </motion.div>
   )
 }

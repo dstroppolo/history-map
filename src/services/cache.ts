@@ -20,7 +20,16 @@ interface CachedEntity<T> {
   cachedAt: number
 }
 
-export async function getCached<T>(key: string): Promise<T | null> {
+/** Default TTL for entity cache (days). Timeline can override with ttlMs. */
+export const TTL_MS_ENTITY = TTL_DAYS * 24 * 60 * 60 * 1000
+/** 24h TTL for timeline query cache (events by year, on this day) */
+export const TTL_MS_TIMELINE = 24 * 60 * 60 * 1000
+
+export async function getCached<T>(
+  key: string,
+  options?: { ttlMs?: number }
+): Promise<T | null> {
+  const ttlMs = options?.ttlMs ?? TTL_MS_ENTITY
   const db = await openDb()
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly')
@@ -33,7 +42,7 @@ export async function getCached<T>(key: string): Promise<T | null> {
         return
       }
       const age = Date.now() - cached.cachedAt
-      if (age > TTL_DAYS * 24 * 60 * 60 * 1000) {
+      if (age > ttlMs) {
         resolve(null)
         return
       }

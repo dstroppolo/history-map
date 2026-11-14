@@ -139,6 +139,18 @@ export async function fetchPerson(qId: string): Promise<Person | null> {
   return entityToPerson(id, entity)
 }
 
+/** Get English Wikipedia article title for a Wikidata entity (for events, etc.). */
+export async function getWikipediaTitleForEntity(qId: string): Promise<string | null> {
+  const id = qId.startsWith('Q') ? qId : `Q${qId}`
+  const url = `${WIKIDATA_API}?action=wbgetentities&ids=${id}&props=sitelinks&format=json&origin=*`
+  const res = await fetch(url)
+  if (!res.ok) return null
+  const json = await res.json()
+  const entity = json.entities?.[id]
+  const title = entity?.sitelinks?.enwiki?.title
+  return typeof title === 'string' ? title : null
+}
+
 export function getParentIds(entity: WikidataEntity): string[] {
   const ids: string[] = []
   const claims = entity.claims ?? {}
