@@ -1,0 +1,296 @@
+{
+  ".claude/settings.json": {
+    "mtime": 1794669744.9950814,
+    "seen": 1794669948.133028,
+    "ast_hash": "7e37a7c8856a45dbc5186b7e5ec6c8c7",
+    "semantic_hash": "7e37a7c8856a45dbc5186b7e5ec6c8c7"
+  },
+  "api/events/[year].ts": {
+    "mtime": 1794669462.009253,
+    "seen": 1794669948.133028,
+    "ast_hash": "2281d63da17dd17f259df11904162351",
+    "semantic_hash": "2281d63da17dd17f259df11904162351"
+  },
+  "api/onthisday/[date].ts": {
+    "mtime": 1794669462.009253,
+    "seen": 1794669948.133028,
+    "ast_hash": "b5bbe1240c1aa0573edf06a70df16742",
+    "semantic_hash": "b5bbe1240c1aa0573edf06a70df16742"
+  },
+  "package.json": {
+    "mtime": 1794670901.2422006,
+    "seen": 1794671394.2425485,
+    "ast_hash": "56b3ec1cb434fad669cd3aa603f94c73",
+    "semantic_hash": ""
+  },
+  "src/App.tsx": {
+    "mtime": 1771550915.396733,
+    "seen": 1794669948.133028,
+    "ast_hash": "4346317b2f6d66be06da050253fbfa3a",
+    "semantic_hash": "4346317b2f6d66be06da050253fbfa3a"
+  },
+  "src/components/EntityDetail/EntityDetailPanel.tsx": {
+    "mtime": 1771807860.5555992,
+    "seen": 1794669948.133028,
+    "ast_hash": "30ba4d0a9b9e439b0dbf66dd3f983a19",
+    "semantic_hash": "30ba4d0a9b9e439b0dbf66dd3f983a19"
+  },
+  "src/components/FamilyTree/FamilyTreeBreadcrumb.tsx": {
+    "mtime": 1771730364.1381085,
+    "seen": 1794669948.133028,
+    "ast_hash": "5ff2db3a8c6fd57fbd7d2b9a292eab6d",
+    "semantic_hash": "5ff2db3a8c6fd57fbd7d2b9a292eab6d"
+  },
+  "src/components/FamilyTree/PersonSearchBar.tsx": {
+    "mtime": 1794671256.54694,
+    "seen": 1794671394.2425485,
+    "ast_hash": "71cf1033688752651d916927bf62713e",
+    "semantic_hash": ""
+  },
+  "src/components/Layout.tsx": {
+    "mtime": 1794671256.5489388,
+    "seen": 1794671394.2425485,
+    "ast_hash": "5d523e69485fdb6a71cb2ac7731145df",
+    "semantic_hash": ""
+  },
+  "src/components/Timeline/EventCard.tsx": {
+    "mtime": 1771550847.2546577,
+    "seen": 1794669948.133028,
+    "ast_hash": "055298ce728d6cd7e1293e99c6b2dda9",
+    "semantic_hash": "055298ce728d6cd7e1293e99c6b2dda9"
+  },
+  "src/components/Timeline/EventDetailPanel.tsx": {
+    "mtime": 1794669462.0102527,
+    "seen": 1794669948.133028,
+    "ast_hash": "8b9a0e4b139c02d90a804e04aa5a3baa",
+    "semantic_hash": "8b9a0e4b139c02d90a804e04aa5a3baa"
+  },
+  "src/config.ts": {
+    "mtime": 1771550833.4882433,
+    "seen": 1794669948.133028,
+    "ast_hash": "8a27fde19449ede5fca42a0c4e4cdc41",
+    "semantic_hash": "8a27fde19449ede5fca42a0c4e4cdc41"
+  },
+  "src/data/dummy.ts": {
+    "mtime": 1771688188.462886,
+    "seen": 1794669948.133028,
+    "ast_hash": "edd3e043bd0ad2ee81db5983fd67d73f",
+    "semantic_hash": "edd3e043bd0ad2ee81db5983fd67d73f"
+  },
+  "src/hooks/useEventArticle.ts": {
+    "mtime": 1794669462.0122526,
+    "seen": 1794669948.133028,
+    "ast_hash": "dc75ad4ceb5ad4ac295a3c4c5a3148da",
+    "semantic_hash": "dc75ad4ceb5ad4ac295a3c4c5a3148da"
+  },
+  "src/hooks/useFamilyTree.ts": {
+    "mtime": 1794671256.5399382,
+    "seen": 1794671394.2425485,
+    "ast_hash": "0f3ce57bb69ce1337fb9ac9f5e642240",
+    "semantic_hash": ""
+  },
+  "src/hooks/useTimelineEvents.ts": {
+    "mtime": 1794669462.0122526,
+    "seen": 1794669948.133028,
+    "ast_hash": "e6f2d2f612a3de94a5883175534cd576",
+    "semantic_hash": "e6f2d2f612a3de94a5883175534cd576"
+  },
+  "src/main.tsx": {
+    "mtime": 1771550832.5379353,
+    "seen": 1794669948.133028,
+    "ast_hash": "a3dc4c8b26595af827fe31849c83c1f7",
+    "semantic_hash": "a3dc4c8b26595af827fe31849c83c1f7"
+  },
+  "src/pages/FamilyTreePage.tsx": {
+    "mtime": 1794671221.7374406,
+    "seen": 1794671394.2425485,
+    "ast_hash": "46c26d219e8627207f2332d4e87460a2",
+    "semantic_hash": ""
+  },
+  "src/pages/MapPage.tsx": {
+    "mtime": 1771550914.7580745,
+    "seen": 1794669948.133028,
+    "ast_hash": "126f7877c51e21d41e05d82e4e747c17",
+    "semantic_hash": "126f7877c51e21d41e05d82e4e747c17"
+  },
+  "src/pages/TimelinePage.tsx": {
+    "mtime": 1794669462.2442536,
+    "seen": 1794669948.133028,
+    "ast_hash": "cc29e7fa72861fe3cb72d76ab983c2fa",
+    "semantic_hash": "cc29e7fa72861fe3cb72d76ab983c2fa"
+  },
+  "src/services/cache.ts": {
+    "mtime": 1794669462.2452538,
+    "seen": 1794669948.133028,
+    "ast_hash": "24d640fe52657f37c31ec37f48913a13",
+    "semantic_hash": "24d640fe52657f37c31ec37f48913a13"
+  },
+  "src/services/timeline.ts": {
+    "mtime": 1794669462.013254,
+    "seen": 1794669948.133028,
+    "ast_hash": "13850787b625da61a5a0acb3f361e78d",
+    "semantic_hash": "13850787b625da61a5a0acb3f361e78d"
+  },
+  "src/services/wikidata.ts": {
+    "mtime": 1794669462.317254,
+    "seen": 1794669948.133028,
+    "ast_hash": "2748de22710ff9f6e3fb7bd124873da2",
+    "semantic_hash": "2748de22710ff9f6e3fb7bd124873da2"
+  },
+  "src/types/event.ts": {
+    "mtime": 1794669462.2452538,
+    "seen": 1794669948.133028,
+    "ast_hash": "bbd58e2d318f0c940b4fd7b7e25afd80",
+    "semantic_hash": "bbd58e2d318f0c940b4fd7b7e25afd80"
+  },
+  "src/types/familyTreeNode.ts": {
+    "mtime": 1771807860.5815985,
+    "seen": 1794669948.133028,
+    "ast_hash": "febd942b67aa9202dc8de2ac08835048",
+    "semantic_hash": "febd942b67aa9202dc8de2ac08835048"
+  },
+  "src/types/person.ts": {
+    "mtime": 1771730406.8758974,
+    "seen": 1794669948.133028,
+    "ast_hash": "038d8871355294a9bdae35d2fc704d3e",
+    "semantic_hash": "038d8871355294a9bdae35d2fc704d3e"
+  },
+  "src/utils/familyTreeLayout.ts": {
+    "mtime": 1771807860.5825992,
+    "seen": 1794669948.133028,
+    "ast_hash": "fe1d2fbf71db4b05d2f91440cbf709c7",
+    "semantic_hash": "fe1d2fbf71db4b05d2f91440cbf709c7"
+  },
+  "src/vite-env.d.ts": {
+    "mtime": 1771550864.3802972,
+    "seen": 1794669948.133028,
+    "ast_hash": "0352474ba2918efe13895edbc3780d94",
+    "semantic_hash": "0352474ba2918efe13895edbc3780d94"
+  },
+  "tsconfig.app.json": {
+    "mtime": 1771550830.9476044,
+    "seen": 1794669948.133028,
+    "ast_hash": "70ebbe7c362b3c4d57a82f0f2155cc76",
+    "semantic_hash": "70ebbe7c362b3c4d57a82f0f2155cc76"
+  },
+  "tsconfig.json": {
+    "mtime": 1771550829.9380198,
+    "seen": 1794669948.133028,
+    "ast_hash": "70ebbe7c362b3c4d57a82f0f2155cc76",
+    "semantic_hash": "70ebbe7c362b3c4d57a82f0f2155cc76"
+  },
+  "vercel.json": {
+    "mtime": 1794669462.2462537,
+    "seen": 1794669948.133028,
+    "ast_hash": "c2f14cf1f11267797c96543653676626",
+    "semantic_hash": "c2f14cf1f11267797c96543653676626"
+  },
+  "vite.config.ts": {
+    "mtime": 1771550830.9516046,
+    "seen": 1794669948.133028,
+    "ast_hash": "6470b0ad57e763c6a72b37cac4f25733",
+    "semantic_hash": "6470b0ad57e763c6a72b37cac4f25733"
+  },
+  ".claude/CLAUDE.md": {
+    "mtime": 1794669671.8435836,
+    "seen": 1794669948.133028,
+    "ast_hash": "9b31786b637be3c13978bec4c2330752",
+    "semantic_hash": "9b31786b637be3c13978bec4c2330752"
+  },
+  ".cursor/plans/history_map_royal_family_tree_acdd2bdc.plan.md": {
+    "mtime": 1771550747.9417682,
+    "seen": 1794669948.133028,
+    "ast_hash": "cf60a6dcdba42e98b088b3c74600590a",
+    "semantic_hash": "cf60a6dcdba42e98b088b3c74600590a"
+  },
+  "CLAUDE.md": {
+    "mtime": 1794669671.8455813,
+    "seen": 1794669948.133028,
+    "ast_hash": "67d88e9d0760c3ba54c75dfd9551c1c5",
+    "semantic_hash": "67d88e9d0760c3ba54c75dfd9551c1c5"
+  },
+  "designs/README.md": {
+    "mtime": 1771550681.8386621,
+    "seen": 1794669948.133028,
+    "ast_hash": "da0c3a45264bed389044172c438a0c85",
+    "semantic_hash": "da0c3a45264bed389044172c438a0c85"
+  },
+  "docs/family-tree-library-options.md": {
+    "mtime": 1771554805.5123322,
+    "seen": 1794669948.133028,
+    "ast_hash": "7b28b4cab0f38af6c979903e9b1ae139",
+    "semantic_hash": "7b28b4cab0f38af6c979903e9b1ae139"
+  },
+  "index.html": {
+    "mtime": 1794671256.5409386,
+    "seen": 1794671394.2425485,
+    "ast_hash": "1aebc75b0073c99abab7f1f3f2a41fd4",
+    "semantic_hash": ""
+  },
+  ".claude/launch.json": {
+    "mtime": 1794671256.5489388,
+    "seen": 1794671394.2425485,
+    "ast_hash": "f1832ddfb48657ecea91fa861fbf3581",
+    "semantic_hash": ""
+  },
+  "src/components/FamilyTree3D/Bloodlines.tsx": {
+    "mtime": 1794671126.8428755,
+    "seen": 1794671394.2425485,
+    "ast_hash": "eb9eafa6aedc4f191cb68030df3b5476",
+    "semantic_hash": ""
+  },
+  "src/components/FamilyTree3D/CameraRig.tsx": {
+    "mtime": 1794671337.4156563,
+    "seen": 1794671394.2425485,
+    "ast_hash": "2bcb7b59ce4f871553b26d5965094fef",
+    "semantic_hash": ""
+  },
+  "src/components/FamilyTree3D/DynastyPanel.tsx": {
+    "mtime": 1794671221.5534418,
+    "seen": 1794671394.2425485,
+    "ast_hash": "8643084abe80866393e2c2d9267c73ff",
+    "semantic_hash": ""
+  },
+  "src/components/FamilyTree3D/DynastyScene.tsx": {
+    "mtime": 1794671337.3080895,
+    "seen": 1794671394.2425485,
+    "ast_hash": "d7fa7fe82c0a0b5e98be53ff5b17bf6d",
+    "semantic_hash": ""
+  },
+  "src/components/FamilyTree3D/Medallion.tsx": {
+    "mtime": 1794671126.764631,
+    "seen": 1794671394.2425485,
+    "ast_hash": "bf091b2630db7b951e7fe32cfb75a5d8",
+    "semantic_hash": ""
+  },
+  "src/components/FamilyTree3D/animStore.ts": {
+    "mtime": 1794671126.658602,
+    "seen": 1794671394.2425485,
+    "ast_hash": "f13e905b03415cc528f0da60d689b2d1",
+    "semantic_hash": ""
+  },
+  "src/components/FamilyTree3D/textures.ts": {
+    "mtime": 1794671307.0992682,
+    "seen": 1794671394.2425485,
+    "ast_hash": "e4b5b5a37989b7d9e4da30e18836654b",
+    "semantic_hash": ""
+  },
+  "src/components/FamilyTree3D/treeGraph.ts": {
+    "mtime": 1794671337.2073438,
+    "seen": 1794671394.2425485,
+    "ast_hash": "3f49f825f786ba619757de6edff62927",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-11-14-family-tree-3d-design.md": {
+    "mtime": 1794671043.6440835,
+    "seen": 1794671394.2425485,
+    "ast_hash": "332abd9a418eac6e9d4dfb533e001919",
+    "semantic_hash": ""
+  },
+  "package-lock.json": {
+    "mtime": 1794670901.2932,
+    "seen": 1794671394.2425485,
+    "ast_hash": "d2db292bb3b8c736ab8a25148292cf51",
+    "semantic_hash": ""
+  }
+}

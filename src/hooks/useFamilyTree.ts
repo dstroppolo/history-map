@@ -29,6 +29,9 @@ export default function useFamilyTree({ rootQId }: UseFamilyTreeOptions) {
   useEffect(() => {
     let cancelled = false
 
+    // Start from an empty tree so the scene can replay its entrance.
+    setNodes([])
+
     async function init() {
       addLoading(rootQId)
 

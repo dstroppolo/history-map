@@ -75,20 +75,21 @@ export default function PersonSearchBar() {
   }, [])
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', minWidth: 200, maxWidth: 280 }}>
+    <div ref={containerRef} style={{ position: 'relative', width: 280, maxWidth: '100%' }}>
       <input
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => query.trim() && setOpen(true)}
         onKeyDown={handleKeyDown}
-        placeholder="Search person by name..."
+        placeholder="Search any historical figure…"
         style={{
           width: '100%',
-          padding: '6px 10px',
-          borderRadius: 4,
+          padding: '10px 16px',
+          borderRadius: 999,
           border: '1px solid var(--color-border)',
           background: 'var(--color-card)',
+          backdropFilter: 'blur(12px)',
           color: 'var(--color-primary)',
           fontSize: 13,
           outline: 'none',
@@ -102,13 +103,14 @@ export default function PersonSearchBar() {
             left: 0,
             right: 0,
             margin: 0,
-            marginTop: 4,
-            padding: 4,
+            marginTop: 8,
+            padding: 6,
             listStyle: 'none',
             background: 'var(--color-card)',
+            backdropFilter: 'blur(16px)',
             border: '1px solid var(--color-border)',
-            borderRadius: 6,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            borderRadius: 14,
+            boxShadow: '0 16px 40px rgba(0,0,0,0.35)',
             maxHeight: 280,
             overflowY: 'auto',
             zIndex: 100,
@@ -127,10 +129,11 @@ export default function PersonSearchBar() {
               <li
                 key={item.id}
                 onClick={() => handleSelect(item)}
+                onMouseEnter={() => setHighlightIndex(i)}
                 style={{
                   padding: '8px 10px',
                   cursor: 'pointer',
-                  borderRadius: 4,
+                  borderRadius: 8,
                   background: i === highlightIndex ? 'var(--color-muted)' : 'transparent',
                   color: 'var(--color-primary)',
                   fontSize: 13,

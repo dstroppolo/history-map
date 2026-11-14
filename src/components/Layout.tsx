@@ -1,8 +1,25 @@
-import { Outlet, NavLink } from 'react-router-dom'
+import { Outlet, NavLink, useLocation } from 'react-router-dom'
+
+/** The family tree is a dark, immersive page; match the header to it. */
+const DARK_CHROME = {
+  '--color-card': '#0A0C18',
+  '--color-border': 'rgba(255, 255, 255, 0.1)',
+  '--color-primary': '#F6F1E4',
+  '--color-secondary': '#9AA1BD',
+  background: '#05060D',
+} as React.CSSProperties
 
 export default function Layout({ children }: { children?: React.ReactNode }) {
+  const dark = useLocation().pathname.startsWith('/family-tree')
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        ...(dark ? DARK_CHROME : null),
+      }}
+    >
       <header
         style={{
           height: 64,
