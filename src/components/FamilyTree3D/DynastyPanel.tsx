@@ -13,6 +13,8 @@ interface DynastyPanelProps {
   relatives: { label: string; people: FamilyTreeNodeData[] }[]
   onClose: () => void
   onFocusNode: (id: string) => void
+  /** Open the relationship finder starting from this person. */
+  onRelate?: () => void
   onRevealParents?: () => void
   onRevealChildren?: () => void
 }
@@ -24,6 +26,7 @@ export default function DynastyPanel({
   relatives,
   onClose,
   onFocusNode,
+  onRelate,
   onRevealParents,
   onRevealChildren,
 }: DynastyPanelProps) {
@@ -121,6 +124,11 @@ export default function DynastyPanel({
           {onRevealChildren && (
             <button type="button" className="dynasty-button" onClick={onRevealChildren}>
               Reveal children
+            </button>
+          )}
+          {onRelate && (
+            <button type="button" className="dynasty-button" onClick={onRelate}>
+              ⇄ Related to…
             </button>
           )}
           <Link

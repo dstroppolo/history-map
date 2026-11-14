@@ -43,7 +43,7 @@ export function syncAnimStore(store: AnimStore, graph: SceneGraph): void {
     const target = new THREE.Vector3(x, y, z)
     const cur = origin
       ? origin.cur.clone()
-      : new THREE.Vector3(x * 0.3, y * 0.3 - 2, z - 26 - fresh * 5)
+      : new THREE.Vector3(x * 0.3, y * 0.3 - 2, z - 26 - Math.min(fresh, 8) * 5)
     store.entries.set(id, { cur, target })
     fresh += 1
   }

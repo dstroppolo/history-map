@@ -27,6 +27,8 @@ body {
 
 #root {
   min-height: 100vh;
+  /* 100vh is taller than the visible area on mobile; dvh avoids a scrollable gap. */
+  min-height: 100dvh;
 }
 
 @keyframes spin {

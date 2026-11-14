@@ -93,6 +93,10 @@ export interface MedallionProps {
   selected: boolean
   hovered: boolean
   loading: boolean
+  /** Explicit opacity (0–1), used by the time scrubber; overrides `dimmed`. */
+  fade?: number
+  /** Poster capture: always show the name, on a plate that hides lines behind it. */
+  poster?: boolean
   onHover: (id: string | null) => void
   onSelect: (id: string) => void
   onAddParent?: () => void
@@ -108,6 +112,8 @@ export default function Medallion({
   selected,
   hovered,
   loading,
+  fade,
+  poster = false,
   onHover,
   onSelect,
   onAddParent,
@@ -130,7 +136,10 @@ export default function Medallion({
       ? `${node.birthYear ?? '?'} – ${node.deathYear ?? ''}`.trim()
       : null
 
-  const labelTex = useMemo(() => makeLabelTexture(node.name, years), [node.name, years])
+  const labelTex = useMemo(
+    () => makeLabelTexture(node.name, years, poster),
+    [node.name, years, poster],
+  )
   const monoTex = useMemo(() => makeMonogramTexture(node.name, color), [node.name, color])
   const [portrait, setPortrait] = useState<THREE.Texture | null>(null)
 
@@ -166,21 +175,24 @@ export default function Medallion({
     s.scale = damp(s.scale, hovered ? 1.14 : selected ? 1.08 : 1, 7, dt)
     inner.current.scale.setScalar(s.scale)
 
-    s.opacity = damp(s.opacity, dimmed ? 0.14 : 1, 7, dt)
+    s.opacity = damp(s.opacity, fade ?? (dimmed ? 0.14 : 1), 7, dt)
     const glowTarget = hovered || selected ? 0.95 : emphasised ? 0.6 : 0.26
     s.glow = damp(s.glow, glowTarget, 6, dt)
     buttonOpacity.current = s.opacity
 
     const distance = camera.position.z - entry.cur.z
     const labelLod =
-      hovered || selected
+      hovered || selected || poster
         ? 1
         : 1 - THREE.MathUtils.smoothstep(distance, LABEL_FADE_NEAR, LABEL_FADE_FAR)
 
     if (discMat.current) discMat.current.opacity = s.opacity
     if (ringMat.current) ringMat.current.opacity = s.opacity
     if (glowMat.current) glowMat.current.opacity = s.glow * s.opacity
-    if (labelMat.current) labelMat.current.opacity = s.opacity * labelLod
+    // On a poster even faded people keep a readable name.
+    if (labelMat.current) {
+      labelMat.current.opacity = (poster ? Math.max(s.opacity, 0.75) : s.opacity) * labelLod
+    }
 
     if (spinner.current && spinMat.current) {
       const active = selected || loading
@@ -269,7 +281,7 @@ export default function Medallion({
         </mesh>
 
         {/* Name and lifespan */}
-        <mesh position={[0, -(RADIUS + 0.82), 0.03]} renderOrder={4}>
+        <mesh position={[0, -(RADIUS + 0.82), 0.03]} renderOrder={8}>
           <planeGeometry args={[LABEL_WIDTH, LABEL_WIDTH / LABEL_ASPECT]} />
           <meshBasicMaterial
             ref={labelMat}

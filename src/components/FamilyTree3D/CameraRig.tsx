@@ -7,7 +7,7 @@ import { depthAt } from './treeGraph'
 const FOV = 45
 const TAN_HALF_FOV = Math.tan(THREE.MathUtils.degToRad(FOV / 2))
 const MIN_DIST = 5
-const MAX_DIST = 80
+const MAX_DIST = 130
 const HOME_DIST = 15
 /** Look a little below the root so its children are in frame. */
 const HOME_DROP = -1.7
@@ -20,11 +20,15 @@ export interface RigHandle {
   focus: (id: string, zoomIn?: boolean) => void
   zoomBy: (factor: number) => void
   home: () => void
+  /** Pull back until everyone is in view. */
+  frameAll: () => void
 }
 
 interface CameraRigProps {
   anim: AnimStore
   rootId: string
+  /** While set, the camera glides to and follows this person (guided journeys). */
+  focusId?: string | null
   /** Shift the view left so the side panel doesn't cover the subject. */
   panelOpen: boolean
 }
@@ -33,7 +37,7 @@ const clampDist = (d: number) => Math.min(MAX_DIST, Math.max(MIN_DIST, d))
 const dampK = (lambda: number, dt: number) => 1 - Math.exp(-lambda * dt)
 
 const CameraRig = forwardRef<RigHandle, CameraRigProps>(function CameraRig(
-  { anim, rootId, panelOpen },
+  { anim, rootId, focusId, panelOpen },
   ref,
 ) {
   const camera = useThree((s) => s.camera)
@@ -93,6 +97,31 @@ const CameraRig = forwardRef<RigHandle, CameraRigProps>(function CameraRig(
         r.vx = 0
         r.vy = 0
       },
+      frameAll() {
+        const r = rig.current
+        let minX = Infinity
+        let maxX = -Infinity
+        let minY = Infinity
+        let maxY = -Infinity
+        for (const { target } of anim.entries.values()) {
+          minX = Math.min(minX, target.x)
+          maxX = Math.max(maxX, target.x)
+          minY = Math.min(minY, target.y)
+          maxY = Math.max(maxY, target.y)
+        }
+        if (minX === Infinity) return
+        const aspect = sizeRef.current.width / sizeRef.current.height
+        // Room for the portraits, their labels and the HUD around the edges.
+        // The bottom third of the screen is covered by the journey caption.
+        const halfH = ((maxY - minY) / 2 + 2.6) * 1.45
+        const halfW = (maxX - minX) / 2 + 2.4
+        r.follow = null
+        r.vx = 0
+        r.vy = 0
+        r.tx = (minX + maxX) / 2
+        r.ty = (minY + maxY) / 2 - halfH * 0.3
+        r.dist = clampDist(Math.max(halfH, halfW / aspect) / TAN_HALF_FOV)
+      },
     }),
     [rootId],
   )
@@ -111,6 +140,17 @@ const CameraRig = forwardRef<RigHandle, CameraRigProps>(function CameraRig(
     r.vx = 0
     r.vy = 0
   }, [rootId])
+
+  // Declared after the fly-in reset so a journey's first stop wins on a new root.
+  useEffect(() => {
+    if (!focusId) return
+    const r = rig.current
+    r.follow = focusId
+    r.followDrop = FOCUS_DROP
+    r.dist = Math.min(r.dist, homeDist())
+    r.vx = 0
+    r.vy = 0
+  }, [focusId, rootId])
 
   useEffect(() => {
     const el = gl.domElement

@@ -21,8 +21,18 @@
   user-select: none;
 }
 
+/* While the family tree is open the page itself never scrolls, and anything
+   that shows past its edge (overscroll bounce, safe areas) is dark too. */
+html.dynasty-page,
+html.dynasty-page body {
+  background: #05060d;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 .dynasty canvas {
   cursor: grab;
+  touch-action: none;
 }
 .dynasty canvas:active {
   cursor: grabbing;
@@ -69,10 +79,433 @@ body.dynasty-pointer .dynasty canvas {
   text-shadow: 0 2px 24px rgba(0, 0, 0, 0.8);
 }
 
+.dynasty-heading__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .dynasty-search {
   position: absolute;
   top: 20px;
   right: 24px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+.dynasty-search > * {
+  pointer-events: auto;
+}
+
+/* Relate / Time / Crown */
+.dynasty-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  max-width: 100%;
+}
+.dynasty-tools__bar {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: rgba(16, 19, 36, 0.7);
+  backdrop-filter: blur(12px);
+}
+.dynasty-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-body);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.dynasty-tool span {
+  color: var(--color-accent);
+  font-size: 14px;
+}
+.dynasty-tool:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-primary);
+}
+.dynasty-tool[aria-pressed='true'] {
+  background: var(--color-accent);
+  color: #1a1408;
+}
+.dynasty-tool[aria-pressed='true'] span {
+  color: inherit;
+}
+.dynasty-tool:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dynasty-tools__divider {
+  width: 1px;
+  margin: 6px 2px;
+  background: var(--color-border);
+}
+.dynasty-tool--icon {
+  padding: 7px 9px;
+}
+
+.dynasty-toast {
+  position: absolute;
+  top: 16px;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  width: fit-content;
+  max-width: calc(100% - 32px);
+  margin: 0 auto;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 193, 112, 0.5);
+  background: rgba(12, 14, 28, 0.92);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  color: var(--color-primary);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.dynasty-card {
+  width: 320px;
+  max-width: 100%;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid var(--color-border);
+  background: rgba(12, 14, 28, 0.9);
+  backdrop-filter: blur(22px) saturate(1.3);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  user-select: text;
+}
+.dynasty-card h3 {
+  margin: 0 0 4px;
+  font-family: var(--dynasty-serif);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+.dynasty-card > p {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-secondary);
+}
+.dynasty-card .dynasty-card__error {
+  margin: 12px 0 0;
+  color: #ff9d9d;
+}
+.dynasty-card .dynasty-card__busy {
+  margin: 14px 0 0;
+  font-style: italic;
+  color: var(--color-accent);
+}
+.dynasty-card__go {
+  width: 100%;
+  margin-top: 14px;
+}
+.dynasty-button:disabled,
+.dynasty-chip:disabled,
+.dynasty-icon-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.dynasty-picker {
+  position: relative;
+  margin-bottom: 10px;
+}
+.dynasty-picker__label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-hint);
+}
+.dynasty-picker input,
+.dynasty-picker__value {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+.dynasty-picker input:focus {
+  border-color: var(--color-accent);
+}
+.dynasty-picker__value {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-color: rgba(232, 193, 112, 0.45);
+}
+.dynasty-picker__value span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dynasty-picker__value button {
+  flex: none;
+  border: 0;
+  background: none;
+  color: var(--color-secondary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.dynasty-picker__value button:hover {
+  color: var(--color-primary);
+}
+.dynasty-picker__results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 6px 0 0;
+  padding: 6px;
+  list-style: none;
+  max-height: 240px;
+  overflow-y: auto;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: #101324;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+.dynasty-picker__results li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+.dynasty-picker__results li.is-active {
+  background: rgba(255, 255, 255, 0.1);
+}
+.dynasty-picker__results li strong {
+  font-weight: 500;
+}
+.dynasty-picker__results li span,
+.dynasty-picker__results li.dynasty-picker__note {
+  font-size: 12px;
+  color: var(--color-secondary);
+  cursor: default;
+}
+
+/* Globe view: sits over the tree, under the HUD */
+.dynasty-globe {
+  position: absolute;
+  inset: 0;
+  background: #05060d;
+}
+.dynasty-globe canvas {
+  cursor: grab;
+}
+.dynasty-globe canvas:active {
+  cursor: grabbing;
+}
+body.dynasty-pointer .dynasty-globe canvas {
+  cursor: pointer;
+}
+.dynasty-globe__info {
+  position: absolute;
+  left: 24px;
+  top: 150px;
+  max-width: 300px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-hint);
+}
+.dynasty-globe__place {
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  background: rgba(12, 14, 28, 0.82);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+.dynasty-globe__place h3 {
+  margin: 4px 0 12px;
+  font-family: var(--dynasty-serif);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--color-primary);
+}
+.dynasty-globe__people {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  max-height: 38vh;
+  overflow-y: auto;
+}
+.dynasty-globe__people small {
+  color: var(--color-hint);
+}
+/* The tree's own camera buttons and hint don't apply to the globe. */
+.dynasty--globe-open .dynasty-controls,
+.dynasty--globe-open .dynasty-hint,
+.dynasty--globe-open .dynasty-heading nav {
+  display: none;
+}
+
+/* Bottom dock: journey caption or the year slider */
+.dynasty-dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 20px;
+  z-index: 4;
+  width: min(640px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 16px 20px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--color-border);
+  background: rgba(12, 14, 28, 0.82);
+  backdrop-filter: blur(22px) saturate(1.3);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), 0 0 60px -34px var(--color-accent);
+}
+.dynasty--panel-open .dynasty-dock {
+  right: 416px;
+}
+.dynasty-dock__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: rgba(5, 6, 13, 0.6);
+  color: var(--color-primary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.dynasty-dock__close:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+.dynasty-dock__title {
+  margin: 4px 36px 0 0;
+  font-family: var(--dynasty-serif);
+  font-size: clamp(20px, 2.6vw, 28px);
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--color-primary);
+}
+.dynasty-dock__subtitle {
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--color-secondary);
+}
+.dynasty-dock__step {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+  font-size: 13px;
+  animation: dynasty-step 0.35s ease;
+}
+.dynasty-dock__step strong {
+  font-weight: 600;
+  color: var(--color-accent);
+}
+.dynasty-dock__step span {
+  color: var(--color-body);
+}
+@keyframes dynasty-step {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.dynasty-dock__transport {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.dynasty-dock__transport .dynasty-icon-button {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+}
+.dynasty-dock__transport .dynasty-icon-button--play {
+  border-color: transparent;
+  background: var(--color-accent);
+  color: #1a1408;
+  font-size: 12px;
+}
+.dynasty-dock__transport .dynasty-icon-button--play:hover {
+  background: #f3d28a;
+}
+.dynasty-dock__transport .dynasty-button {
+  flex: none;
+  padding: 7px 12px;
+  font-size: 12px;
+}
+.dynasty-dock__count {
+  flex: none;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-secondary);
+}
+.dynasty-range {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  margin: 0;
+  background: transparent;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+.dynasty-dock__year {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-right: 36px;
+}
+.dynasty-dock__year span {
+  font-family: var(--dynasty-serif);
+  font-size: 44px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+}
+.dynasty-dock__year small {
+  font-size: 12.5px;
+  color: var(--color-accent);
 }
 
 .dynasty-legend {
@@ -388,12 +821,72 @@ body.dynasty-pointer .dynasty canvas {
 
 @media (max-width: 720px) {
   .dynasty-heading {
-    max-width: calc(100vw - 48px);
-    top: 68px;
+    max-width: calc(100vw - 32px);
+    top: 114px;
+    left: 16px;
   }
   .dynasty-search {
-    left: 24px;
-    right: 24px;
+    top: 12px;
+    left: 16px;
+    right: 16px;
+    align-items: stretch;
+  }
+  .dynasty-search > div:first-child {
+    width: auto !important;
+  }
+  .dynasty-tools {
+    align-items: stretch;
+  }
+  .dynasty-tools__bar {
+    justify-content: space-between;
+  }
+  .dynasty-tool {
+    flex: 1;
+    justify-content: center;
+    padding: 7px 8px;
+  }
+  .dynasty-card {
+    width: auto;
+  }
+  .dynasty-tool {
+    font-size: 12px;
+    gap: 4px;
+  }
+  /* Six buttons in one row: drop the glyphs to make room. */
+  .dynasty-tool > span {
+    display: none;
+  }
+  .dynasty-tool--icon {
+    flex: 0 0 auto;
+  }
+  .dynasty-globe__info {
+    left: 16px;
+    right: 16px;
+    top: 190px;
+    max-width: none;
+  }
+  .dynasty-globe__people {
+    max-height: 22vh;
+  }
+  .dynasty--panel-open .dynasty-globe__info {
+    display: none;
+  }
+
+  .dynasty-dock {
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    width: calc(100% - 16px);
+    padding: 14px 14px 12px;
+  }
+  .dynasty-dock__year span {
+    font-size: 36px;
+  }
+  .dynasty-dock__transport .dynasty-button {
+    display: none;
+  }
+  /* The dock takes the bottom edge; pinch and drag still move the view. */
+  .dynasty--dock-open .dynasty-controls,
+  .dynasty--panel-open .dynasty-dock {
+    display: none;
   }
   .dynasty-hint {
     display: none;

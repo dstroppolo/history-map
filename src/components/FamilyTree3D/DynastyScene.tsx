@@ -7,6 +7,8 @@ import type { FamilyTreeNodeData } from '@/types/familyTreeNode'
 import { createAnimStore, stepAnimStore, syncAnimStore } from './animStore'
 import Bloodlines, { type LineMode } from './Bloodlines'
 import CameraRig, { type RigHandle } from './CameraRig'
+import { CaptureBridge, type CaptureHandle } from './capture'
+import JourneyMarker from './JourneyMarker'
 import Medallion from './Medallion'
 import { getGlowTexture } from './textures'
 import {
@@ -26,12 +28,30 @@ export interface DynastySceneProps {
   highlightHouseId: string | null
   panelOpen: boolean
   animatedLines: boolean
+  /** Guided journey: who is lit so far, and who the marker sits on. */
+  litIds?: Set<string> | null
+  markerId?: string | null
+  markerCrown?: boolean
+  /** Journey paused: bring the rest of the tree up so it can be explored. */
+  journeyPaused?: boolean
+  /** Stop rendering (another view is covering the scene). */
+  suspended?: boolean
+  /** Time scrubber: show the tree as it stood in this year. */
+  year?: number | null
   rigRef: RefObject<RigHandle>
+  captureRef?: RefObject<CaptureHandle>
+  /** Fixed pixel ratio, raised briefly while a poster is being captured. */
+  dpr?: number | null
   onHover: (id: string | null) => void
   onSelect: (id: string | null) => void
   onAddParent: (id: string) => void
   onAddChild: (id: string) => void
 }
+
+type Era = 'unknown' | 'unborn' | 'alive' | 'dead'
+const THIS_YEAR = new Date().getFullYear()
+/** How solid a person looks in the scrubbed year. */
+const ERA_FADE: Record<Era, number> = { unknown: 0.22, unborn: 0.03, alive: 1, dead: 0.3 }
 
 /** Far-off colour washes so the void isn't flat black. */
 function Nebula() {
@@ -71,6 +91,12 @@ function SceneContent({
   highlightHouseId,
   panelOpen,
   animatedLines,
+  litIds = null,
+  markerId = null,
+  markerCrown = false,
+  journeyPaused = false,
+  year = null,
+  dpr,
   rigRef,
   onHover,
   onSelect,
@@ -99,32 +125,65 @@ function SceneContent({
     [nodeById, houseColor],
   )
 
+  // A journey or the time scrubber decides who stands out; hovering doesn't.
+  const guided = !!litIds || year !== null
   const lineage = useMemo(
-    () => (hoveredId && graph.targets.has(hoveredId) ? lineageOf(graph, hoveredId) : null),
-    [graph, hoveredId],
+    () =>
+      !guided && hoveredId && graph.targets.has(hoveredId) ? lineageOf(graph, hoveredId) : null,
+    [graph, hoveredId, guided],
+  )
+
+  /** Where a person stands in the scrubbed year. */
+  const eraOf = useCallback(
+    (id: string): Era => {
+      const node = nodeById.get(id)
+      if (year === null || !node || node.birthYear === undefined) return 'unknown'
+      if (year < node.birthYear) return 'unborn'
+      const death = node.deathYear ?? Math.min(node.birthYear + 100, THIS_YEAR)
+      return year <= death ? 'alive' : 'dead'
+    },
+    [nodeById, year],
   )
 
   const isDimmed = useCallback(
     (id: string) => {
+      if (litIds) return !litIds.has(id)
+      if (year !== null) return eraOf(id) !== 'alive'
       if (lineage && !lineage.has(id)) return true
       if (highlightHouseId && nodeById.get(id)?.houseId !== highlightHouseId) return true
       return false
     },
-    [lineage, highlightHouseId, nodeById],
+    [litIds, year, eraOf, lineage, highlightHouseId, nodeById],
   )
 
   const modeOf = useCallback(
     (ids: string[]): LineMode => {
+      if (litIds) {
+        if (ids.every((id) => litIds.has(id))) return 'bright'
+        return journeyPaused ? 'normal' : 'dim'
+      }
+      if (year !== null) {
+        const eras = ids.map(eraOf)
+        if (eras.includes('unborn')) return 'dim'
+        return eras.every((e) => e === 'alive') ? 'bright' : 'normal'
+      }
       if (ids.some(isDimmed)) return 'dim'
       if (lineage && ids.every((id) => lineage.has(id))) return 'bright'
       return 'normal'
     },
-    [isDimmed, lineage],
+    [litIds, journeyPaused, year, eraOf, isDimmed, lineage],
   )
 
   return (
     <>
-      <CameraRig ref={rigRef} anim={anim} rootId={rootId} panelOpen={panelOpen} />
+      <CameraRig
+        ref={rigRef}
+        anim={anim}
+        rootId={rootId}
+        focusId={markerId}
+        panelOpen={panelOpen}
+      />
+      <JourneyMarker anim={anim} targetId={markerId} crown={markerCrown} />
       <Bloodlines
         threads={graph.threads}
         couples={graph.couples}
@@ -143,10 +202,22 @@ function SceneContent({
             entry={entry}
             color={colorOf(node.id)}
             dimmed={isDimmed(node.id)}
-            emphasised={!!lineage?.has(node.id)}
+            emphasised={guided ? !isDimmed(node.id) : !!lineage?.has(node.id)}
+            fade={
+              litIds
+                ? litIds.has(node.id)
+                  ? 1
+                  : journeyPaused
+                    ? 0.6
+                    : 0.14
+                : year !== null
+                  ? ERA_FADE[eraOf(node.id)]
+                  : undefined
+            }
             selected={selectedId === node.id}
             hovered={hoveredId === node.id}
             loading={loadingIds.has(node.id)}
+            poster={!!dpr}
             onHover={onHover}
             onSelect={onSelect}
             onAddParent={node.parentsFetched ? undefined : () => onAddParent(node.id)}
@@ -159,14 +230,16 @@ function SceneContent({
 }
 
 export default function DynastyScene(props: DynastySceneProps) {
-  const { onSelect } = props
+  const { onSelect, suspended, captureRef, dpr } = props
   return (
     <Canvas
-      dpr={[1, 2]}
+      frameloop={suspended ? 'never' : 'always'}
+      dpr={dpr ?? [1, 2]}
       camera={{ fov: 45, near: 0.1, far: 500, position: [0, 9, 70] }}
-      gl={{ antialias: true, powerPreference: 'high-performance' }}
+      // The drawing buffer is kept so the view can be exported as a poster.
+      gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true }}
       onPointerMissed={() => onSelect(null)}
-      style={{ touchAction: 'none' }}
+      style={{ touchAction: 'none', visibility: suspended ? 'hidden' : 'visible' }}
     >
       <color attach="background" args={['#05060D']} />
       <Nebula />
@@ -181,7 +254,9 @@ export default function DynastyScene(props: DynastySceneProps) {
         color="#F3D9A4"
       />
       <SceneContent {...props} />
-      <EffectComposer multisampling={0}>
+      {captureRef && <CaptureBridge handle={captureRef} />}
+      {/* Rebuilt when the pixel ratio changes so its buffers match the canvas. */}
+      <EffectComposer key={dpr ?? 'auto'} multisampling={0}>
         <Bloom mipmapBlur intensity={0.85} luminanceThreshold={1} luminanceSmoothing={0.25} />
         <Vignette offset={0.25} darkness={0.75} />
       </EffectComposer>

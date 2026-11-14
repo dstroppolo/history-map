@@ -43,26 +43,51 @@ function wrapLines(
 export const LABEL_ASPECT = 3
 
 /** Name (up to two lines) with the lifespan beneath, on a transparent canvas. */
-export function makeLabelTexture(name: string, years: string | null): THREE.CanvasTexture {
+export function makeLabelTexture(
+  name: string,
+  years: string | null,
+  /** Draw a dark plate behind the text so lines passing under it can't cross the name. */
+  plate = false,
+): THREE.CanvasTexture {
   const canvas = document.createElement('canvas')
   canvas.width = 600
   canvas.height = 600 / LABEL_ASPECT
   const ctx = canvas.getContext('2d')!
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.95)'
-  ctx.shadowBlur = 10
 
-  ctx.font = `600 50px ${DISPLAY_FONT}`
-  ctx.fillStyle = '#F6F1E4'
+  const nameFont = `600 50px ${DISPLAY_FONT}`
+  const yearsFont = `500 25px ${UI_FONT}`
+  ctx.font = nameFont
   const lines = wrapLines(ctx, name, 570, 2)
   const firstY = lines.length === 1 ? 62 : 42
+  const yearsY = lines.length === 1 ? 118 : 152
+
+  if (plate) {
+    let width = Math.max(...lines.map((line) => ctx.measureText(line).width))
+    if (years) {
+      ctx.font = yearsFont
+      width = Math.max(width, ctx.measureText(years).width)
+    }
+    width = Math.min(596, width + 40)
+    const top = firstY - 34
+    const bottom = years ? yearsY + 24 : firstY + (lines.length - 1) * 52 + 34
+    ctx.fillStyle = 'rgba(7, 9, 20, 0.9)'
+    ctx.beginPath()
+    ctx.roundRect(300 - width / 2, top, width, bottom - top, 18)
+    ctx.fill()
+  }
+
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.95)'
+  ctx.shadowBlur = 10
+  ctx.font = nameFont
+  ctx.fillStyle = '#F6F1E4'
   lines.forEach((line, i) => ctx.fillText(line, 300, firstY + i * 52))
 
   if (years) {
-    ctx.font = `500 25px ${UI_FONT}`
+    ctx.font = yearsFont
     ctx.fillStyle = 'rgba(214, 219, 240, 0.72)'
-    ctx.fillText(years, 300, lines.length === 1 ? 118 : 152)
+    ctx.fillText(years, 300, yearsY)
   }
   return canvasTexture(canvas)
 }
@@ -148,7 +173,39 @@ export function getPlusTexture(): THREE.CanvasTexture {
   return plusTexture
 }
 
-const COMMONS_API = 'https://commons.wikimedia.org/w/api.php'
+let crownTexture: THREE.CanvasTexture | null = null
+
+/** A small gold crown, drawn rather than relying on a font glyph. */
+export function getCrownTexture(): THREE.CanvasTexture {
+  if (crownTexture) return crownTexture
+  const size = 128
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')!
+  ctx.fillStyle = '#FFFFFF'
+  ctx.lineJoin = 'round'
+  ctx.beginPath()
+  ctx.moveTo(18, 92)
+  ctx.lineTo(12, 40)
+  ctx.lineTo(40, 64)
+  ctx.lineTo(64, 24)
+  ctx.lineTo(88, 64)
+  ctx.lineTo(116, 40)
+  ctx.lineTo(110, 92)
+  ctx.closePath()
+  ctx.fill()
+  ctx.fillRect(18, 98, 92, 10)
+  for (const [x, y] of [[12, 36], [64, 20], [116, 36]]) {
+    ctx.beginPath()
+    ctx.arc(x, y, 8, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  crownTexture = canvasTexture(canvas)
+  return crownTexture
+}
+
+const COMMONS_API ='https://commons.wikimedia.org/w/api.php'
 const FILE_PATH_MARKER = 'Special:FilePath/'
 const thumbCache = new Map<string, Promise<string | null>>()
 
